@@ -1,27 +1,53 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/login', [AuthController::class, 'authenticate']);
 });
-
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-require __DIR__.'/auth.php';
+    Route::get('/dashboard', fn () =>
+        Inertia::render('Dashboard/Index')
+    );
+
+    Route::prefix('sales')->name('sales.')->group(function () {
+        Route::get('/', fn () =>
+            Inertia::render('Sales/Index')
+        )->name('index');
+        Route::get('/{id}', fn ($id) =>
+            Inertia::render('Sales/Show', [
+                'id' => $id,
+            ])
+        )->name('show');
+
+        Route::post('/', fn () => back())->name('store');
+        Route::post('/import', fn () => back())->name('import');
+        Route::get('/export', fn () => back())->name('export');
+    });
+
+    Route::prefix('users')->name('users.')->group(function () {
+        Route::get('/', fn () =>
+            Inertia::render('Users/Index')
+        )->name('index');
+        Route::get('/{id}', fn ($id) =>
+            Inertia::render('Users/Show', [
+                'id' => $id,
+            ])
+        )->name('show');
+    });
+
+    Route::prefix('activity-logs')->name('activity-logs.')->group(function () {
+        Route::get('/', fn () =>
+            Inertia::render('ActivityLogs/Index')
+        )->name('index');
+    });
+
+});
