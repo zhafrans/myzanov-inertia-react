@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\SalesController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -24,24 +25,36 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('users', UserController::class);
 
-    Route::prefix('sales')->name('sales.')->group(function () {
-        Route::get(
-            '/',
-            fn() =>
-            Inertia::render('Sales/Index')
-        )->name('index');
-        Route::get(
-            '/{id}',
-            fn($id) =>
-            Inertia::render('Sales/Show', [
-                'id' => $id,
-            ])
-        )->name('show');
+    Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
+    Route::get('/sales/create', [SalesController::class, 'create'])->name('sales.create');
+    Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
+    Route::get('/sales/{id}', [SalesController::class, 'show'])->name('sales.show');
+    Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
+    Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
+    Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
 
-        Route::post('/', fn() => back())->name('store');
-        Route::post('/import', fn() => back())->name('import');
-        Route::get('/export', fn() => back())->name('export');
-    });
+    // Installment routes
+    Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store');
+    Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index');
+
+    // Route::prefix('sales')->name('sales.')->group(function () {
+    //     Route::get(
+    //         '/',
+    //         fn() =>
+    //         Inertia::render('Sales/Index')
+    //     )->name('index');
+    //     Route::get(
+    //         '/{id}',
+    //         fn($id) =>
+    //         Inertia::render('Sales/Show', [
+    //             'id' => $id,
+    //         ])
+    //     )->name('show');
+
+    //     Route::post('/', fn() => back())->name('store');
+    //     Route::post('/import', fn() => back())->name('import');
+    //     Route::get('/export', fn() => back())->name('export');
+    // });
 
     // Route::prefix('users')->name('users.')->group(function () {
     //     Route::get(

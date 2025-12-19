@@ -2,84 +2,256 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useEffect } from "react"
+import { router } from "@inertiajs/react"
 
-export default function InputInstallmentModal({ open, setOpen, salesId }) {
-    const [tagihanForm, setTagihanForm] = useState({
-        date: "",
-        nominal: "",
-        collector: "",
+export default function InputInstallmentModal({ open, setOpen, salesId, collectors, remainingAmount, onSuccess }) {
+    const [form, setForm] = useState({
+        installment_amount: "",
+        payment_date: new Date().toISOString().split('T')[0],
+        collector_id: "",
     })
+    const [loading, setLoading] = useState(false)
+    const [errors, setErrors] = useState({})
 
-    // Reset form tiap kali modal dibuka
+    // Reset form saat modal dibuka
     useEffect(() => {
         if (open) {
-            setTagihanForm({
-                date: "",
-                nominal: "",
-                collector: "",
+            setForm({
+                installment_amount: "",
+                payment_date: new Date().toISOString().split('T')[0],
+                collector_id: collectors?.[0]?.id?.toString() || "",
             })
+            setErrors({})
         }
-    }, [open])
+    }, [open, collectors])
 
-    const handleTagihanChange = e => {
+    const handleChange = (e) => {
         const { name, value } = e.target
-        setTagihanForm(prev => ({ ...prev, [name]: value }))
+        setForm(prev => ({ ...prev, [name]: value }))
+        // Clear error saat user mulai mengetik
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: undefined }))
+        }
     }
 
-    const handleTagihanSubmit = () => {
-        // Nanti bisa diganti router.post(...) untuk submit ke server
-        console.log("INPUT TAGIHAN:", { salesId, ...tagihanForm })
-        setOpen(false)
+    const handleSelectChange = (name, value) => {
+        setForm(prev => ({ ...prev, [name]: value }))
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: undefined }))
+        }
+    }
+
+    const validateForm = () => {
+        const newErrors = {}
+        
+        if (!form.installment_amount || parseFloat(form.installment_amount) <= 0) {
+            newErrors.installment_amount = "Nominal harus lebih dari 0"
+        } else if (remainingAmount && parseFloat(form.installment_amount) > remainingAmount) {
+            newErrors.installment_amount = `Nominal tidak boleh melebihi sisa tagihan (Rp ${remainingAmount.toLocaleString()})`
+        }
+        
+        if (!form.payment_date) {
+            newErrors.payment_date = "Tanggal harus diisi"
+        }
+        
+        if (!form.collector_id) {
+            newErrors.collector_id = "Collector harus dipilih"
+        }
+        
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        
+        if (!validateForm()) {
+            return
+        }
+        
+        setLoading(true)
+
+        router.post(route('sales.installments.store', salesId), {
+            ...form,
+            installment_amount: parseFloat(form.installment_amount)
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setOpen(false)
+                setLoading(false)
+                
+                // Tampilkan toast sukses
+                if (typeof window !== 'undefined' && window.toast) {
+                    window.toast.success('Tagihan berhasil ditambahkan!')
+                }
+                
+                // Panggil callback onSuccess jika ada
+                if (onSuccess && typeof onSuccess === 'function') {
+                    onSuccess()
+                }
+                
+                // Reload halaman untuk update data
+                router.reload({ only: ['sale'] })
+            },
+            onError: (errors) => {
+                setErrors(errors)
+                setLoading(false)
+                
+                // Tampilkan toast error
+                if (typeof window !== 'undefined' && window.toast) {
+                    window.toast.error('Gagal menambahkan tagihan. Silakan coba lagi.')
+                }
+            },
+            onFinish: () => setLoading(false),
+        })
+    }
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+        }).format(amount || 0)
     }
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Input Tagihan</DialogTitle>
+                    <DialogTitle className="text-lg font-semibold">Input Tagihan</DialogTitle>
+                    <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                            Sisa tagihan: <span className="font-semibold text-red-600">
+                                {formatCurrency(remainingAmount)}
+                            </span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Pastikan nominal tidak melebihi sisa tagihan
+                        </p>
+                    </div>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                    {/* Tanggal Angsuran */}
-                    <div className="flex flex-col space-y-1">
-                        <Label htmlFor="date">Tanggal Angsuran</Label>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Jumlah Tagihan */}
+                    <div className="space-y-2">
+                        <Label htmlFor="installment_amount" className="flex items-center justify-between">
+                            <span>Jumlah Tagihan</span>
+                            <span className="text-xs text-muted-foreground">
+                                Maks: {formatCurrency(remainingAmount)}
+                            </span>
+                        </Label>
                         <Input
-                            type="date"
-                            id="date"
-                            name="date"
-                            value={tagihanForm.date}
-                            onChange={handleTagihanChange}
+                            id="installment_amount"
+                            name="installment_amount"
+                            type="number"
+                            value={form.installment_amount}
+                            onChange={handleChange}
+                            placeholder="Masukkan jumlah"
+                            className={errors.installment_amount ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            min="0"
+                            max={remainingAmount || undefined}
+                            step="1000"
                         />
+                        {errors.installment_amount && (
+                            <p className="text-sm text-red-500">{errors.installment_amount}</p>
+                        )}
+                        <div className="flex justify-end">
+                            <span className="text-xs text-muted-foreground">
+                                Terbilang: {formatCurrency(form.installment_amount)}
+                            </span>
+                        </div>
                     </div>
 
-                    {/* Nominal */}
-                    <div className="flex flex-col space-y-1">
-                        <Label htmlFor="nominal">Nominal</Label>
+                    {/* Tanggal Pembayaran */}
+                    <div className="space-y-2">
+                        <Label htmlFor="payment_date">Tanggal Pembayaran</Label>
                         <Input
-                            type="number"
-                            id="nominal"
-                            name="nominal"
-                            value={tagihanForm.nominal}
-                            onChange={handleTagihanChange}
+                            id="payment_date"
+                            name="payment_date"
+                            type="date"
+                            value={form.payment_date}
+                            onChange={handleChange}
+                            className={errors.payment_date ? "border-red-500 focus-visible:ring-red-500" : ""}
+                            max={new Date().toISOString().split('T')[0]}
                         />
+                        {errors.payment_date && (
+                            <p className="text-sm text-red-500">{errors.payment_date}</p>
+                        )}
                     </div>
 
                     {/* Collector */}
-                    <div className="flex flex-col space-y-1">
-                        <Label htmlFor="collector">Nama Collector</Label>
-                        <Input
-                            id="collector"
-                            name="collector"
-                            value={tagihanForm.collector}
-                            onChange={handleTagihanChange}
-                        />
+                    <div className="space-y-2">
+                        <Label htmlFor="collector_id">Penagih</Label>
+                        <Select
+                            value={form.collector_id}
+                            onValueChange={(value) => handleSelectChange('collector_id', value)}
+                        >
+                            <SelectTrigger className={errors.collector_id ? "border-red-500 focus-visible:ring-red-500" : ""}>
+                                <SelectValue placeholder="Pilih penagih" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {collectors && collectors.length > 0 ? (
+                                    collectors.map(collector => (
+                                        <SelectItem 
+                                            key={collector.id} 
+                                            value={collector.id.toString()}
+                                        >
+                                            <div className="flex flex-col">
+                                                <span>{collector.name}</span>
+                                                {collector.email && (
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {collector.email}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))
+                                ) : (
+                                    <SelectItem value="" disabled>
+                                        Tidak ada collector tersedia
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        {errors.collector_id && (
+                            <p className="text-sm text-red-500">{errors.collector_id}</p>
+                        )}
+                        {collectors && collectors.length === 0 && (
+                            <p className="text-sm text-amber-600">
+                                Tidak ada collector tersedia. Tambahkan collector terlebih dahulu.
+                            </p>
+                        )}
                     </div>
-                </div>
 
-                <DialogFooter>
-                    <Button onClick={handleTagihanSubmit}>Simpan</Button>
-                </DialogFooter>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setOpen(false)}
+                            disabled={loading}
+                            className="sm:flex-1"
+                        >
+                            Batal
+                        </Button>
+                        <Button 
+                            type="submit" 
+                            disabled={loading || !form.installment_amount || !form.collector_id}
+                            className="sm:flex-1 bg-blue-600 hover:bg-blue-700"
+                        >
+                            {loading ? (
+                                <>
+                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Menyimpan...
+                                </>
+                            ) : "Simpan Tagihan"}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     )

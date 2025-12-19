@@ -10,21 +10,41 @@ class Sales extends Model
 
     public function items()
     {
-        return $this->hasMany(SalesItem::class);
+        return $this->hasMany(SalesItem::class, 'sale_id');
     }
 
     public function installments()
     {
-        return $this->hasMany(SalesInstallment::class);
+        return $this->hasMany(SalesInstallment::class, 'sale_id');
     }
 
-    public function outstandings()
+    public function outstanding()
     {
-        return $this->hasMany(SalesOutstanding::class);
+        return $this->hasMany(SalesOutstanding::class, 'sale_id');
     }
 
     public function seller()
     {
         return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function province()
+    {
+        return $this->belongsTo(Province::class, 'province_id');
+    }
+
+    public function city()
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    public function subdistrict()
+    {
+        return $this->belongsTo(Subdistrict::class, 'subdistrict_id');
+    }
+
+    public function village()
+    {
+        return $this->belongsTo(Village::class, 'village_id');
     }
 }

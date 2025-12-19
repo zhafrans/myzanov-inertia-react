@@ -1,2 +1,6 @@
 *
 !.gitignore
+!cities.json
+!provinces.json
+!subdistricts.json
+!villages.json

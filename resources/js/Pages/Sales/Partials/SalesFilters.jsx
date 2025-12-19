@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { Filter } from "lucide-react"
 
-export default function SalesFilters({ filters, setFilters }) {
+export default function SalesFilters({ filters, setFilters, availableSizes }) {
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -30,7 +30,7 @@ export default function SalesFilters({ filters, setFilters }) {
                     <Select
                         value={filters.size}
                         onValueChange={v =>
-                            setFilters(f => ({ ...f, size: v }))
+                            setFilters({ size: v })
                         }
                     >
                         <SelectTrigger>
@@ -38,9 +38,9 @@ export default function SalesFilters({ filters, setFilters }) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Semua</SelectItem>
-                            <SelectItem value="40">40</SelectItem>
-                            <SelectItem value="41">41</SelectItem>
-                            <SelectItem value="42">42</SelectItem>
+                            {availableSizes?.map(size => (
+                                <SelectItem key={size} value={size}>{size}</SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
@@ -53,7 +53,7 @@ export default function SalesFilters({ filters, setFilters }) {
                     <Select
                         value={filters.sort}
                         onValueChange={v =>
-                            setFilters(f => ({ ...f, sort: v }))
+                            setFilters({ sort: v })
                         }
                     >
                         <SelectTrigger>
@@ -72,7 +72,7 @@ export default function SalesFilters({ filters, setFilters }) {
                     <Select
                         value={filters.status}
                         onValueChange={v =>
-                            setFilters(f => ({ ...f, status: v }))
+                            setFilters({ status: v })
                         }
                     >
                         <SelectTrigger>
@@ -93,10 +93,9 @@ export default function SalesFilters({ filters, setFilters }) {
                         id="notCollectedThisMonth"
                         checked={filters.notCollectedThisMonth || false}
                         onChange={e =>
-                            setFilters(f => ({
-                                ...f,
+                            setFilters({
                                 notCollectedThisMonth: e.target.checked,
-                            }))
+                            })
                         }
                         className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
                     />

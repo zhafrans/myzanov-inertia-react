@@ -1,0 +1,269 @@
+{
+"provinces": [
+	{
+		"id" : 11,
+		"name" : "ACEH",
+		"code" : "BZREWT23",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 12,
+		"name" : "SUMATERA UTARA",
+		"code" : "SMJOTW9T",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 13,
+		"name" : "SUMATERA BARAT",
+		"code" : "3CVMFMFH",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 14,
+		"name" : "RIAU",
+		"code" : "QS3SKZTA",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 15,
+		"name" : "JAMBI",
+		"code" : "W9GBPC6I",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 16,
+		"name" : "SUMATERA SELATAN",
+		"code" : "QMJH1ZAV",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 17,
+		"name" : "BENGKULU",
+		"code" : "UDVIPTX3",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 18,
+		"name" : "LAMPUNG",
+		"code" : "OIVSL9EX",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 19,
+		"name" : "KEPULAUAN BANGKA BELITUNG",
+		"code" : "C1VGR6RQ",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 21,
+		"name" : "KEPULAUAN RIAU",
+		"code" : "OLEBNFEG",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 31,
+		"name" : "DKI JAKARTA",
+		"code" : "NDPFMQBD",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 32,
+		"name" : "JAWA BARAT",
+		"code" : "ZTAEZVQ3",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 33,
+		"name" : "JAWA TENGAH",
+		"code" : "IFOT5VNE",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 34,
+		"name" : "DI YOGYAKARTA",
+		"code" : "2XLQMJTS",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 35,
+		"name" : "JAWA TIMUR",
+		"code" : "PLQSFCJT",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 36,
+		"name" : "BANTEN",
+		"code" : "0Y5ZJSY2",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 51,
+		"name" : "BALI",
+		"code" : "RLLYUHPP",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 52,
+		"name" : "NUSA TENGGARA BARAT",
+		"code" : "VFVTGOMR",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 53,
+		"name" : "NUSA TENGGARA TIMUR",
+		"code" : "OQZFSVCY",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 61,
+		"name" : "KALIMANTAN BARAT",
+		"code" : "6OLRYMLB",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 62,
+		"name" : "KALIMANTAN TENGAH",
+		"code" : "DXUDUUYF",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 63,
+		"name" : "KALIMANTAN SELATAN",
+		"code" : "EJELI0CT",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 64,
+		"name" : "KALIMANTAN TIMUR",
+		"code" : "IVWNIKQN",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 65,
+		"name" : "KALIMANTAN UTARA",
+		"code" : "PO9ZJ2YL",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 71,
+		"name" : "SULAWESI UTARA",
+		"code" : "0MNLIVYZ",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 72,
+		"name" : "SULAWESI TENGAH",
+		"code" : "VTHCEEKD",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 73,
+		"name" : "SULAWESI SELATAN",
+		"code" : "KXIOBVPB",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 74,
+		"name" : "SULAWESI TENGGARA",
+		"code" : "5VA8MMFI",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 75,
+		"name" : "GORONTALO",
+		"code" : "Q5ST6LFM",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 76,
+		"name" : "SULAWESI BARAT",
+		"code" : "PCAUUF8G",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 81,
+		"name" : "MALUKU",
+		"code" : "IZRSTKKK",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 82,
+		"name" : "MALUKU UTARA",
+		"code" : "L1FZ1H8W",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 91,
+		"name" : "PAPUA BARAT",
+		"code" : "OCFFDXFQ",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 92,
+		"name" : "PAPUA BARAT DAYA",
+		"code" : "9HH5IMDS",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 94,
+		"name" : "PAPUA",
+		"code" : "BATYTOZN",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 95,
+		"name" : "PAPUA SELATAN",
+		"code" : "EMJMQE6H",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 96,
+		"name" : "PAPUA TENGAH",
+		"code" : "3V6OIKDP",
+		"created_at" : null,
+		"updated_at" : null
+	},
+	{
+		"id" : 97,
+		"name" : "PAPUA PEGUNUNGAN",
+		"code" : "YSBKCDOD",
+		"created_at" : null,
+		"updated_at" : null
+	}
+]}
