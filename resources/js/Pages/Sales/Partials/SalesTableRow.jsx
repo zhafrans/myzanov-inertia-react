@@ -17,7 +17,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-export default function SalesTableRow({ item }) {
+export default function SalesTableRow({ item, collectors }) {
     const [openEdit, setOpenEdit] = useState(false)
     const [openTagihan, setOpenTagihan] = useState(false)
     const [openDelete, setOpenDelete] = useState(false)
@@ -52,7 +52,7 @@ export default function SalesTableRow({ item }) {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => router.visit(route('sales.show', item.id))}
             >
-                <TableCell>{item.cardNo}</TableCell>
+                <TableCell>{item.card_number}</TableCell>
                 <TableCell>{item.sales}</TableCell>
                 <TableCell>{item.product}</TableCell>
                 <TableCell>{item.color}</TableCell>
@@ -61,6 +61,9 @@ export default function SalesTableRow({ item }) {
                 <TableCell>Rp {item.price.toLocaleString()}</TableCell>
                 <TableCell className={`font-semibold ${item.remaining > 0 ? 'text-red-600' : 'text-green-600'}`}>
                     Rp {item.remaining.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                    {item.last_collected_at || '-'}
                 </TableCell>
 
                 {/* Actions */}
@@ -134,6 +137,7 @@ export default function SalesTableRow({ item }) {
                 open={openTagihan}
                 setOpen={setOpenTagihan}
                 salesId={item.id}
+                collectors={collectors}
                 remainingAmount={item.remaining}
             />
         </>

@@ -27,6 +27,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
     Route::get('/sales/create', [SalesController::class, 'create'])->name('sales.create');
+
+    // Export route - must be before {id} routes
+    Route::get('/sales/export', [SalesController::class, 'export'])->name('sales.export');
+
     Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
     Route::get('/sales/{id}', [SalesController::class, 'show'])->name('sales.show');
     Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
@@ -36,6 +40,7 @@ Route::middleware('auth')->group(function () {
     // Installment routes
     Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store');
     Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index');
+
 
     // Route::prefix('sales')->name('sales.')->group(function () {
     //     Route::get(
@@ -79,5 +84,11 @@ Route::middleware('auth')->group(function () {
             fn() =>
             Inertia::render('Catalogue/Index')
         )->name('index');
+    });
+    Route::prefix('locations')->name('locations.')->group(function () {
+        Route::get('/provinces', [SalesController::class, 'getProvinces'])->name('provinces');
+        Route::get('/cities/{provinceId}', [SalesController::class, 'getCities'])->name('cities');
+        Route::get('/subdistricts/{cityId}', [SalesController::class, 'getSubdistricts'])->name('subdistricts');
+        Route::get('/villages/{subdistrictId}', [SalesController::class, 'getVillages'])->name('villages');
     });
 });

@@ -22,12 +22,12 @@ export default function SalesPagination({ links }) {
                     disabled={!link.url || link.active}
                     className={link.active ? "bg-primary text-primary-foreground" : ""}
                 >
-                    {link.label.includes('Previous') ? (
+                    {link.label.includes('Previous') || link.label.includes('pagination.previous') ? (
                         <ChevronLeft className="w-4 h-4" />
-                    ) : link.label.includes('Next') ? (
+                    ) : link.label.includes('Next') || link.label.includes('pagination.next') ? (
                         <ChevronRight className="w-4 h-4" />
                     ) : (
-                        link.label
+                        <span dangerouslySetInnerHTML={{ __html: link.label }} />
                     )}
                 </Button>
             ))}

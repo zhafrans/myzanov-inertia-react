@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
     Popover,
     PopoverContent,
@@ -23,88 +25,117 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-56 space-y-4">
-                {/* Filter Size */}
-                <div>
-                    <p className="text-sm font-medium mb-1">Size</p>
-                    <Select
-                        value={filters.size}
-                        onValueChange={v =>
-                            setFilters({ size: v })
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Semua" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua</SelectItem>
-                            {availableSizes?.map(size => (
-                                <SelectItem key={size} value={size}>{size}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+            <PopoverContent className="w-72 space-y-4">
+                {/* Date Range Filter */}
+                <div className="space-y-3">
+                    <p className="text-sm font-semibold">Rentang Tanggal</p>
+                    <div className="space-y-2">
+                        <div>
+                            <Label htmlFor="startDate" className="text-xs">Dari Tanggal</Label>
+                            <Input
+                                id="startDate"
+                                type="date"
+                                value={filters.startDate || ''}
+                                onChange={e => setFilters({ startDate: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="endDate" className="text-xs">Sampai Tanggal</Label>
+                            <Input
+                                id="endDate"
+                                type="date"
+                                value={filters.endDate || ''}
+                                onChange={e => setFilters({ endDate: e.target.value })}
+                                className="mt-1"
+                            />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Filter Tanggal Pengambilan */}
-                <div>
-                    <p className="text-sm font-medium mb-1">
-                        Tanggal Pengambilan
-                    </p>
-                    <Select
-                        value={filters.sort}
-                        onValueChange={v =>
-                            setFilters({ sort: v })
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Terbaru/Terlama" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="desc">Terbaru</SelectItem>
-                            <SelectItem value="asc">Terlama</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                <div className="border-t pt-3 space-y-4">
+                    {/* Filter Size */}
+                    <div>
+                        <p className="text-sm font-medium mb-1">Size</p>
+                        <Select
+                            value={filters.size}
+                            onValueChange={v =>
+                                setFilters({ size: v })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Semua" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua</SelectItem>
+                                {availableSizes?.map(size => (
+                                    <SelectItem key={size} value={size}>{size}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                {/* Filter Status Lunas */}
-                <div>
-                    <p className="text-sm font-medium mb-1">Status Lunas</p>
-                    <Select
-                        value={filters.status}
-                        onValueChange={v =>
-                            setFilters({ status: v })
-                        }
-                    >
-                        <SelectTrigger>
-                            <SelectValue placeholder="Semua" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">Semua</SelectItem>
-                            <SelectItem value="paid">Sudah Lunas</SelectItem>
-                            <SelectItem value="unpaid">Belum Lunas</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
+                    {/* Filter Tanggal Pengambilan */}
+                    <div>
+                        <p className="text-sm font-medium mb-1">
+                            Tanggal Pengambilan
+                        </p>
+                        <Select
+                            value={filters.sort}
+                            onValueChange={v =>
+                                setFilters({ sort: v })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Terbaru/Terlama" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="desc">Terbaru</SelectItem>
+                                <SelectItem value="asc">Terlama</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
 
-                {/* Filter Belum Tertagih Bulan Ini */}
-                <div className="flex items-center space-x-2">
-                    <input
-                        type="checkbox"
-                        id="notCollectedThisMonth"
-                        checked={filters.notCollectedThisMonth || false}
-                        onChange={e =>
-                            setFilters({
-                                notCollectedThisMonth: e.target.checked,
-                            })
-                        }
-                        className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
-                    />
-                    <label
-                        htmlFor="notCollectedThisMonth"
-                        className="text-sm select-none"
-                    >
-                        Belum Tertagih Bulan Ini
-                    </label>
+                    {/* Filter Status Lunas */}
+                    <div>
+                        <p className="text-sm font-medium mb-1">Status Lunas</p>
+                        <Select
+                            value={filters.status}
+                            onValueChange={v =>
+                                setFilters({ status: v })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Semua" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua</SelectItem>
+                                <SelectItem value="paid">Sudah Lunas</SelectItem>
+                                <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Filter Belum Tertagih Bulan Ini */}
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id="notCollectedThisMonth"
+                            checked={filters.notCollectedThisMonth || false}
+                            onChange={e =>
+                                setFilters({
+                                    notCollectedThisMonth: e.target.checked,
+                                })
+                            }
+                            className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
+                        />
+                        <label
+                            htmlFor="notCollectedThisMonth"
+                            className="text-sm select-none"
+                        >
+                            Belum Tertagih Bulan Ini
+                        </label>
+                    </div>
                 </div>
             </PopoverContent>
         </Popover>

@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Sale;
+use App\Models\ActivityLog;
 use App\Models\Sales;
 use App\Models\SalesInstallment;
 use App\Models\SalesOutstanding;
 use App\Models\SalesItem;
 use App\Models\User;
+use App\Models\Province;
+use App\Models\City;
+use App\Models\Subdistrict;
+use App\Models\Village;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -44,15 +48,29 @@ class SalesController extends Controller
             }
         }
 
+        // Filter berdasarkan rentang tanggal
+        if ($request->filled('startDate')) {
+            $query->whereDate('sales.transaction_at', '>=', $request->startDate);
+        }
+
+        if ($request->filled('endDate')) {
+            $query->whereDate('sales.transaction_at', '<=', $request->endDate);
+        }
+
         // Filter belum tertagih bulan ini
         if ($request->boolean('notCollectedThisMonth')) {
             $currentMonth = now()->format('Y-m');
+            $oneMonthAgo = now()->subMonth()->format('Y-m-d');
 
-            $query->whereHas('outstanding', function ($q) {
-                $q->where('outstanding_amount', '>=', 0);
-            })
-                ->whereDoesntHave('installments', function ($q) use ($currentMonth) {
-                    $q->whereRaw("DATE_FORMAT(payment_date, '%Y-%m') = ?", [$currentMonth]);
+            $query->havingRaw('remaining_amount > 0')
+                ->where(function ($q) use ($currentMonth, $oneMonthAgo) {
+                    $q->whereDoesntHave('installments', function ($subQ) use ($currentMonth) {
+                        $subQ->whereRaw("DATE_FORMAT(payment_date, '%Y-%m') = ?", [$currentMonth]);
+                    })
+                        ->orWhereHas('installments', function ($subQ) use ($oneMonthAgo) {
+                            $subQ->whereRaw('payment_date < ?', [$oneMonthAgo])
+                                ->whereRaw('payment_date = (SELECT MAX(payment_date) FROM sales_installments WHERE sale_id = sales.id)');
+                        });
                 });
         }
 
@@ -73,7 +91,7 @@ class SalesController extends Controller
 
         // Sort
         $sort = $request->input('sort', 'desc');
-        $query->orderBy('transaction_at', $sort);
+        $query->orderBy('created_at', $sort);
 
         // Pagination
         $perPage = $request->input('perPage', 10);
@@ -82,16 +100,31 @@ class SalesController extends Controller
             ->through(function ($sale) {
                 return [
                     'id' => $sale->id,
-                    'cardNo' => $sale->card_number,
+                    'invoice' => $sale->invoice,
+                    'card_number' => $sale->card_number,
+                    'customer_name' => $sale->customer_name,
                     'sales' => $sale->seller?->name ?? 'N/A',
                     'product' => $sale->items->first()?->product_name ?? 'N/A',
                     'color' => $sale->items->first()?->color ?? 'N/A',
                     'size' => $sale->items->first()?->size ?? 'N/A',
                     'address' => $sale->address,
                     'date' => Carbon::parse($sale->transaction_at)->format('Y-m-d'),
+                    'transaction_at' => $sale->transaction_at,
                     'price' => (float) $sale->price,
                     'remaining' => (float) $sale->remaining_amount,
+                    'last_collected_at' => $sale->installments->sortByDesc('payment_date')->first()?->payment_date
+                        ? Carbon::parse($sale->installments->sortByDesc('payment_date')->first()->payment_date)->format('Y-m-d')
+                        : null,
                     'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
+                    'province_id' => $sale->province_id,
+                    'city_id' => $sale->city_id,
+                    'subdistrict_id' => $sale->subdistrict_id,
+                    'village_id' => $sale->village_id,
+                    'payment_type' => $sale->payment_type,
+                    'is_tempo' => $sale->is_tempo,
+                    'tempo_at' => $sale->tempo_at,
+                    'note' => $sale->note,
+                    'seller_id' => $sale->seller_id,
                 ];
             });
 
@@ -100,6 +133,9 @@ class SalesController extends Controller
             ->distinct()
             ->orderBy('size')
             ->pluck('size');
+
+        // Get collectors
+        $collectors = User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Sales/Index', [
             'sales' => $sales,
@@ -111,15 +147,120 @@ class SalesController extends Controller
                 'search' => $request->search ?? '',
             ],
             'availableSizes' => $sizes,
+            'collectors' => $collectors,
         ]);
     }
 
     /**
      * Show the form for creating a new resource.
      */
+    public function create()
+    {
+        $users = User::select('id', 'name')->get();
+        $provinces = Province::orderBy('name')->get();
+
+        return Inertia::render('Sales/Create', [
+            'users' => $users,
+            'provinces' => $provinces,
+        ]);
+    }
+
     /**
-     * Display the specified resource.
+     * Store a newly created resource in storage.
      */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'card_number' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'customer_name' => 'required|string',
+            'province_id' => 'nullable|string',
+            'city_id' => 'nullable|string',
+            'subdistrict_id' => 'nullable|string',
+            'village_id' => 'nullable|string',
+            'address' => 'required|string',
+            'seller_id' => 'nullable|exists:users,id',
+            'payment_type' => 'required|string',
+            'status' => 'required|string',
+            'transaction_at' => 'required|date',
+            'is_tempo' => 'nullable|string',
+            'tempo_at' => 'nullable|date',
+            'note' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_name' => 'required|string',
+            'items.*.color' => 'required|string',
+            'items.*.size' => 'required|string',
+            'items.*.quantity' => 'required|integer|min:1',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Generate Invoice
+            $lastSale = Sales::latest()->first();
+            $lastId = $lastSale ? $lastSale->id : 0;
+            $invoice = 'INV-' . date('Ymd') . '-' . str_pad($lastId + 1, 4, '0', STR_PAD_LEFT);
+
+            // Separate items from sale data
+            $items = $validated['items'];
+            unset($validated['items']);
+
+            // Add invoice to sale data
+            $validated['invoice'] = $invoice;
+
+            // Create sale (without items)
+            $sale = Sales::create($validated);
+
+            // Create sale items
+            foreach ($items as $item) {
+                $sale->items()->create($item);
+            }
+
+            // Jika pembayaran tempo, buat outstanding record
+            if ($request->is_tempo === 'yes') {
+                $sale->outstanding()->create([
+                    'outstanding_amount' => $request->price
+                ]);
+            }
+
+            // Log activity
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'create',
+                'module' => 'sales',
+                'description' => "Membuat penjualan baru: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $sale->id,
+                'model_type' => Sales::class,
+                'new_values' => [
+                    'sale' => $sale->toArray(),
+                    'items' => $sale->items->toArray(),
+                    'outstanding' => $request->is_tempo === 'yes' ? ['outstanding_amount' => $request->price] : null
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('sales.index')
+                ->with('success', 'Sale created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Log error activity
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'create',
+                'module' => 'sales',
+                'description' => "Gagal membuat penjualan: " . $e->getMessage(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            return back()->with('error', 'Failed to create sale: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Display the specified resource.
      */
@@ -165,12 +306,11 @@ class SalesController extends Controller
                 'color' => $item->color,
                 'size' => $item->size,
                 'quantity' => (int) $item->quantity,
-                'price_per_item' => $item->price ?? 0, // Jika ada field price di sales_items
+                'price_per_item' => $item->price ?? 0,
             ];
         });
 
-        // Ambil data collectors (users yang bisa menjadi collector)
-        // Anda bisa menyesuaikan query berdasarkan kebutuhan bisnis
+        // Ambil data collectors
         $collectors = User::query()
             ->select('id', 'name', 'email')
             ->orderBy('name')
@@ -210,7 +350,7 @@ class SalesController extends Controller
                 'tempo_at_formatted' => $sale->tempo_at ? Carbon::parse($sale->tempo_at)->format('d-m-Y') : null,
                 'note' => $sale->note,
                 'is_printed' => $sale->is_printed,
-                'phone' => $sale->phone ?? '-', // Jika ada field phone di sales table
+                'phone' => $sale->phone ?? '-',
 
                 // Data terstruktur untuk frontend
                 'customer' => [
@@ -233,77 +373,8 @@ class SalesController extends Controller
                 'remaining' => (float) $remainingAmount,
                 'is_lunas' => $remainingAmount <= 0,
             ],
-            'collectors' => $collectors, // Kirim data collectors ke frontend
+            'collectors' => $collectors,
         ]);
-    }
-
-    public function create()
-    {
-        // Ambil data yang diperlukan untuk form create
-        $users = \App\Models\User::select('id', 'name')->get();
-        $provinces = []; // Anda bisa menambahkan data province dari database
-
-        return Inertia::render('Sales/Create', [
-            'users' => $users,
-            'provinces' => $provinces,
-        ]);
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'invoice' => 'required|string|unique:sales,invoice',
-            'card_number' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'customer_name' => 'required|string',
-            'province_id' => 'nullable|string',
-            'city_id' => 'nullable|string',
-            'subdistrict_id' => 'nullable|string',
-            'village_id' => 'nullable|string',
-            'address' => 'required|string',
-            'seller_id' => 'nullable|exists:users,id',
-            'payment_type' => 'required|string',
-            'status' => 'required|string',
-            'transaction_at' => 'required|date',
-            'is_tempo' => 'nullable|string',
-            'tempo_at' => 'nullable|date',
-            'note' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.product_name' => 'required|string',
-            'items.*.color' => 'required|string',
-            'items.*.size' => 'required|string',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
-
-        DB::beginTransaction();
-
-        try {
-            // Create sale
-            $sale = Sales::create($validated);
-
-            // Create sale items
-            foreach ($request->items as $item) {
-                $sale->items()->create($item);
-            }
-
-            // Jika pembayaran tempo, buat outstanding record
-            if ($request->is_tempo === 'yes') {
-                $sale->outstanding()->create([
-                    'outstanding_amount' => $request->price
-                ]);
-            }
-
-            DB::commit();
-
-            return redirect()->route('sales.index')
-                ->with('success', 'Sale created successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to create sale: ' . $e->getMessage());
-        }
     }
 
     /**
@@ -312,7 +383,7 @@ class SalesController extends Controller
     public function edit(string $id)
     {
         $sale = Sales::with(['items', 'installments', 'outstanding'])->findOrFail($id);
-        $users = \App\Models\User::select('id', 'name')->get();
+        $users = User::select('id', 'name')->get();
 
         return Inertia::render('Sales/Edit', [
             'sale' => $sale,
@@ -326,6 +397,9 @@ class SalesController extends Controller
     public function update(Request $request, string $id)
     {
         $sale = Sales::findOrFail($id);
+        $oldValues = $sale->toArray();
+        $oldItems = $sale->items->toArray();
+        $oldOutstanding = $sale->outstanding?->toArray();
 
         $validated = $request->validate([
             'card_number' => 'nullable|string',
@@ -345,10 +419,76 @@ class SalesController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        $sale->update($validated);
+        DB::beginTransaction();
 
-        return redirect()->route('sales.index')
-            ->with('success', 'Sale updated successfully.');
+        try {
+            $sale->update($validated);
+            $newValues = $sale->fresh()->toArray();
+
+            // Filter field yang tidak perlu di-log
+            $ignoredFields = ['created_at', 'updated_at', 'email_verified_at'];
+
+            // Hapus field yang diabaikan dari old dan new values
+            foreach ($ignoredFields as $field) {
+                unset($oldValues[$field]);
+                unset($newValues[$field]);
+            }
+
+            // Cari field yang berubah (setelah filter)
+            $changedFields = [];
+            foreach ($newValues as $key => $value) {
+                if (!isset($oldValues[$key]) || $oldValues[$key] != $value) {
+                    $changedFields[$key] = $value;
+                }
+            }
+
+            // Log activity
+            if (!empty($changedFields)) {
+                ActivityLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'update',
+                    'module' => 'sales',
+                    'description' => "Mengupdate penjualan: {$sale->invoice} - {$sale->customer_name}",
+                    'model_id' => $sale->id,
+                    'model_type' => Sales::class,
+                    'old_values' => array_intersect_key($oldValues, $changedFields),
+                    'new_values' => $changedFields,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+            } else {
+                ActivityLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'update',
+                    'module' => 'sales',
+                    'description' => "Mencoba mengupdate penjualan: {$sale->invoice} - {$sale->customer_name} (tidak ada perubahan)",
+                    'model_id' => $sale->id,
+                    'model_type' => Sales::class,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('sales.index')
+                ->with('success', 'Sale updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'update',
+                'module' => 'sales',
+                'description' => "Gagal mengupdate penjualan {$sale->invoice}: " . $e->getMessage(),
+                'model_id' => $sale->id,
+                'model_type' => Sales::class,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            return back()->with('error', 'Failed to update sale: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -359,7 +499,12 @@ class SalesController extends Controller
         DB::beginTransaction();
 
         try {
-            $sale = Sales::findOrFail($id);
+            $sale = Sales::with(['items', 'installments', 'outstanding'])->findOrFail($id);
+
+            $oldValues = $sale->toArray();
+            $oldItems = $sale->items->toArray();
+            $oldInstallments = $sale->installments->toArray();
+            $oldOutstanding = $sale->outstanding?->toArray();
 
             // Delete related records
             $sale->items()->delete();
@@ -369,12 +514,40 @@ class SalesController extends Controller
             // Delete sale
             $sale->delete();
 
+            // Log activity
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'delete',
+                'module' => 'sales',
+                'description' => "Menghapus penjualan: {$oldValues['invoice']} - {$oldValues['customer_name']}",
+                'model_id' => $oldValues['id'],
+                'model_type' => Sales::class,
+                'old_values' => [
+                    'sale' => $oldValues,
+                    'items' => $oldItems,
+                    'installments' => $oldInstallments,
+                    'outstanding' => $oldOutstanding
+                ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
             DB::commit();
 
             return redirect()->route('sales.index')
                 ->with('success', 'Sale deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
+
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'delete',
+                'module' => 'sales',
+                'description' => "Gagal menghapus penjualan: " . $e->getMessage(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
             return back()->with('error', 'Failed to delete sale: ' . $e->getMessage());
         }
     }
@@ -422,9 +595,21 @@ class SalesController extends Controller
                 ]);
             }
 
+            // Log activity untuk pembuatan installment
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'create',
+                'module' => 'sales_installments',
+                'description' => "Membuat installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $installment->id,
+                'model_type' => SalesInstallment::class,
+                'new_values' => $installment->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
             DB::commit();
 
-            // Redirect kembali ke halaman show dengan pesan sukses
             return redirect()->route('sales.show', $id)
                 ->with('success', 'Installment berhasil ditambahkan.')
                 ->with('remaining_amount', $remainingAmount - $validated['installment_amount']);
@@ -454,5 +639,52 @@ class SalesController extends Controller
             });
 
         return response()->json($installments);
+    }
+
+    public function getProvinces()
+    {
+        $provinces = Province::orderBy('name')->get();
+        return response()->json($provinces);
+    }
+
+    public function getCities($provinceId)
+    {
+        $cities = City::where('province_id', $provinceId)->orderBy('name')->get();
+        return response()->json($cities);
+    }
+
+    public function getSubdistricts($cityId)
+    {
+        $subdistricts = Subdistrict::where('city_id', $cityId)->orderBy('name')->get();
+        return response()->json($subdistricts);
+    }
+
+    public function getVillages($subdistrictId)
+    {
+        $villages = Village::where('subdistrict_id', $subdistrictId)->orderBy('name')->get();
+        return response()->json($villages);
+    }
+
+    /**
+     * Export sales data to Excel
+     */
+    public function export(Request $request)
+    {
+        $filters = $request->only([
+            'size',
+            'status',
+            'startDate',
+            'endDate',
+            'search',
+            'sort',
+            'notCollectedThisMonth'
+        ]);
+
+        $filename = 'sales_export_' . now()->format('Y-m-d_His') . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\SalesExport($filters),
+            $filename
+        );
     }
 }

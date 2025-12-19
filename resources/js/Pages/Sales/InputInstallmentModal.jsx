@@ -209,7 +209,7 @@ export default function InputInstallmentModal({ open, setOpen, salesId, collecto
                                         </SelectItem>
                                     ))
                                 ) : (
-                                    <SelectItem value="" disabled>
+                                    <SelectItem value="none" disabled>
                                         Tidak ada collector tersedia
                                     </SelectItem>
                                 )}

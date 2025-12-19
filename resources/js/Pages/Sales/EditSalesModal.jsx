@@ -6,11 +6,18 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useEffect } from "react"
 import { router } from "@inertiajs/react"
+import axios from "axios"
 
 export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
     const [form, setForm] = useState({})
     const [loading, setLoading] = useState(false)
     const [errors, setErrors] = useState({})
+
+    // Location Data
+    const [provinces, setProvinces] = useState([])
+    const [cities, setCities] = useState([])
+    const [subdistricts, setSubdistricts] = useState([])
+    const [villages, setVillages] = useState([])
 
     // Initialize form dengan data dari props
     useEffect(() => {
@@ -22,17 +29,68 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                 price: saleData.price || 0,
                 payment_type: saleData.payment_type || '',
                 status: saleData.status || '',
+                // Fix transaction_at format if needed
                 transaction_at: saleData.transaction_at ? 
-                    saleData.transaction_at.split(' ')[0] : 
+                    saleData.transaction_at.split('T')[0].split(' ')[0] : 
                     new Date().toISOString().split('T')[0],
                 is_tempo: saleData.is_tempo || 'no',
-                tempo_at: saleData.tempo_at || '',
+                tempo_at: saleData.tempo_at ? saleData.tempo_at.split('T')[0] : '',
                 note: saleData.note || '',
                 seller_id: saleData.seller_id || '',
+                
+                province_id: saleData.province_id || '',
+                city_id: saleData.city_id || '',
+                subdistrict_id: saleData.subdistrict_id || '',
+                village_id: saleData.village_id || '',
             })
             setErrors({})
+            
+            // Initial fetch of location data
+            fetchProvinces()
+            if (saleData.province_id) fetchCities(saleData.province_id)
+            if (saleData.city_id) fetchSubdistricts(saleData.city_id)
+            if (saleData.subdistrict_id) fetchVillages(saleData.subdistrict_id)
         }
     }, [open, saleData])
+
+    const fetchProvinces = async () => {
+        try {
+            const res = await axios.get(route('locations.provinces'))
+            setProvinces(res.data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const fetchCities = async (provinceId) => {
+        if (!provinceId) return
+        try {
+            const res = await axios.get(route('locations.cities', provinceId))
+            setCities(res.data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const fetchSubdistricts = async (cityId) => {
+        if (!cityId) return
+        try {
+            const res = await axios.get(route('locations.subdistricts', cityId))
+            setSubdistricts(res.data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const fetchVillages = async (subdistrictId) => {
+        if (!subdistrictId) return
+        try {
+            const res = await axios.get(route('locations.villages', subdistrictId))
+            setVillages(res.data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -47,6 +105,35 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: undefined }))
         }
+    }
+
+    const handleLocationChange = (type, value) => {
+        setForm(prev => {
+            const newForm = { ...prev, [type]: value }
+            
+            // Reset child fields
+            if (type === 'province_id') {
+                newForm.city_id = ''
+                newForm.subdistrict_id = ''
+                newForm.village_id = ''
+                setCities([])
+                setSubdistricts([])
+                setVillages([])
+                fetchCities(value)
+            } else if (type === 'city_id') {
+                newForm.subdistrict_id = ''
+                newForm.village_id = ''
+                setSubdistricts([])
+                setVillages([])
+                fetchSubdistricts(value)
+            } else if (type === 'subdistrict_id') {
+                newForm.village_id = ''
+                setVillages([])
+                fetchVillages(value)
+            }
+            
+            return newForm
+        })
     }
 
     const handleSubmit = (e) => {
@@ -69,7 +156,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogContent className="sm:max-w-xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Edit Sales</DialogTitle>
                     <p className="text-sm text-muted-foreground">
@@ -108,6 +195,66 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         )}
                     </div>
 
+                    {/* Location fields */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                            <Label>Provinsi</Label>
+                            <Select value={String(form.province_id || '')} onValueChange={v => handleLocationChange('province_id', v)}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {provinces.map(p => (
+                                        <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Kota/Kab</Label>
+                            <Select value={String(form.city_id || '')} onValueChange={v => handleLocationChange('city_id', v)} disabled={!form.province_id}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cities.map(c => (
+                                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div className="space-y-2">
+                            <Label>Kecamatan</Label>
+                            <Select value={String(form.subdistrict_id || '')} onValueChange={v => handleLocationChange('subdistrict_id', v)} disabled={!form.city_id}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {subdistricts.map(s => (
+                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Desa/Kel</Label>
+                            <Select value={String(form.village_id || '')} onValueChange={v => handleLocationChange('village_id', v)} disabled={!form.subdistrict_id}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="null">-- Kosongkan --</SelectItem>
+                                    {villages.map(v => (
+                                        <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     {/* Address */}
                     <div className="space-y-2">
                         <Label htmlFor="address">Alamat</Label>
@@ -126,7 +273,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
 
                     {/* Price */}
                     <div className="space-y-2">
-                        <Label htmlFor="price">Harga</Label>
+                        <Label htmlFor="price">Total Harga</Label>
                         <Input
                             id="price"
                             name="price"
@@ -141,7 +288,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                     </div>
 
                     {/* Grid untuk Payment Type, Status, Transaction Date */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="payment_type">Tipe Pembayaran</Label>
                             <Select
@@ -184,7 +331,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="transaction_at">Tanggal Transaksi</Label>
                             <Input
