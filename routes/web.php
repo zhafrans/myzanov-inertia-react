@@ -1,9 +1,8 @@
 <?php
 
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use Illuminate\Foundation\Application;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -59,13 +58,7 @@ Route::middleware('auth')->group(function () {
     //     )->name('show');
     // });
 
-    Route::prefix('activity-logs')->name('activity-logs.')->group(function () {
-        Route::get(
-            '/',
-            fn() =>
-            Inertia::render('ActivityLogs/Index')
-        )->name('index');
-    });
+    Route::resource('activity-logs', ActivityLogController::class)->only(['index']);
 
     Route::prefix('catalogues')->name('catalogues.')->group(function () {
         Route::get(
