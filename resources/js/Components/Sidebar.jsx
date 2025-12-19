@@ -8,6 +8,7 @@ export default function Sidebar({ user }) {
         { label: "Sales", href: "/sales" },
         { label: "Reports", href: "/reports" },
         { label: "Users", href: "/users" },
+        { label: "Catalogue", href: "/catalogue" },
     ]
 
     return (

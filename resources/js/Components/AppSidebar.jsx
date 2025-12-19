@@ -1,5 +1,5 @@
 import { Link, usePage } from "@inertiajs/react"
-import { LayoutDashboard, Users, BarChart, Clock, Group, Users2, User, CircleDashed, Banknote } from "lucide-react"
+import { LayoutDashboard, Users, BarChart, Clock, Group, Users2, User, CircleDashed, Banknote, Footprints } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/Contexts/SidebarContext"
 import clsx from "clsx"
@@ -12,8 +12,8 @@ export default function AppSidebar() {
         { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { label: "Sales", href: "/sales", icon: Banknote },
         { label: "Users", href: "/users", icon: Users },
+        { label: "Catalogue", href: "/catalogues", icon: Footprints },
         { label: "Activity Logs", href: "/activity-logs", icon: Clock },
-        { label: "Reports", href: "/reports", icon: BarChart },
     ]
 
     return (
