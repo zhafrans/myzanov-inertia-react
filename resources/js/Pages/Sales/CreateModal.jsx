@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { useState, useEffect } from "react"
 import { router, usePage } from "@inertiajs/react"
 import { Plus, Trash2 } from "lucide-react"
@@ -34,12 +36,17 @@ export default function CreateModal() {
         village_id: '',
         price: 0,
         payment_type: 'cash',
-        status: 'pending',
+        status: 'paid', // default for cash
         transaction_at: new Date().toISOString().split('T')[0],
         is_tempo: 'no',
         tempo_at: '',
         note: '',
         seller_id: auth.user.id,
+        has_dp: false,
+        dp_amount: 0,
+        installment_months: 5, // default for credit
+        // Field untuk installment cash
+        cash_installment_amount: 0,
     })
 
     const [errors, setErrors] = useState({})
@@ -50,11 +57,85 @@ export default function CreateModal() {
         }
     }, [open])
 
-    // Auto-calculate total price
+    // Auto-calculate total price dan set cash installment amount
     useEffect(() => {
         const total = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0)
-        setForm(prev => ({ ...prev, price: total }))
-    }, [items])
+        setForm(prev => ({ 
+            ...prev, 
+            price: total,
+            // Untuk cash, installment amount sama dengan total harga
+            cash_installment_amount: form.payment_type === 'cash' ? total : prev.cash_installment_amount
+        }))
+    }, [items, form.payment_type])
+
+    // Handle payment type change
+    useEffect(() => {
+        const today = new Date(form.transaction_at)
+        
+        if (form.payment_type === 'cash') {
+            // Cash: status paid, no tempo, no DP, installment amount = total price
+            setForm(prev => ({
+                ...prev,
+                status: 'paid',
+                is_tempo: 'no',
+                tempo_at: '',
+                has_dp: false,
+                dp_amount: 0,
+                cash_installment_amount: prev.price
+            }))
+        } else if (form.payment_type === 'credit') {
+            // Credit: status pending, calculate tempo date based on months
+            const tempoDate = new Date(today)
+            tempoDate.setMonth(tempoDate.getMonth() + form.installment_months)
+            
+            setForm(prev => ({
+                ...prev,
+                status: 'unpaid',
+                is_tempo: 'yes',
+                tempo_at: tempoDate.toISOString().split('T')[0]
+            }))
+        } else if (form.payment_type === 'cash_tempo') {
+            // Cash Tempo: status pending, tempo +1 month
+            const tempoDate = new Date(today)
+            tempoDate.setMonth(tempoDate.getMonth() + 1)
+            
+            setForm(prev => ({
+                ...prev,
+                status: 'unpaid',
+                is_tempo: 'yes',
+                tempo_at: tempoDate.toISOString().split('T')[0]
+            }))
+        }
+    }, [form.payment_type, form.installment_months, form.transaction_at, form.price])
+
+    // Update cash installment amount when price changes
+    useEffect(() => {
+        if (form.payment_type === 'cash') {
+            setForm(prev => ({
+                ...prev,
+                cash_installment_amount: prev.price
+            }))
+        }
+    }, [form.price, form.payment_type])
+
+    // Update tempo date when transaction date changes
+    useEffect(() => {
+        if (form.transaction_at && (form.payment_type === 'credit' || form.payment_type === 'cash_tempo')) {
+            const today = new Date(form.transaction_at)
+            const tempoDate = new Date(today)
+            
+            if (form.payment_type === 'credit') {
+                tempoDate.setMonth(tempoDate.getMonth() + form.installment_months)
+            } else if (form.payment_type === 'cash_tempo') {
+                tempoDate.setMonth(tempoDate.getMonth() + 1)
+            }
+            
+            setForm(prev => ({
+                ...prev,
+                tempo_at: tempoDate.toISOString().split('T')[0]
+            }))
+        }
+    }, [form.transaction_at, form.payment_type, form.installment_months])
 
     const fetchProvinces = async () => {
         try {
@@ -150,32 +231,21 @@ export default function CreateModal() {
         e.preventDefault()
         setLoading(true)
 
-        // Ensure location fields are sent as strings if they are selected
-        const payload = { ...form, items }
+        // Prepare payload
+        const payload = { 
+            ...form, 
+            items,
+            // Untuk cash, kita akan mengirim installment otomatis
+            // Installment akan dibuat di backend dengan jumlah cash_installment_amount
+        }
 
         router.post(route('sales.store'), payload, {
             preserveScroll: true,
             onSuccess: () => {
                 setOpen(false)
                 setLoading(false)
-                setForm({
-                    card_number: '',
-                    customer_name: '',
-                    address: '',
-                    province_id: '',
-                    city_id: '',
-                    subdistrict_id: '',
-                    village_id: '',
-                    price: 0,
-                    payment_type: 'cash',
-                    status: 'pending',
-                    transaction_at: new Date().toISOString().split('T')[0],
-                    is_tempo: 'no',
-                    tempo_at: '',
-                    note: '',
-                    seller_id: auth.user.id,
-                })
-                setItems([{ product_name: '', color: '', size: '', quantity: 1, price: 0 }])
+                // Reset form to defaults
+                resetForm()
             },
             onError: (errors) => {
                 setErrors(errors)
@@ -183,6 +253,31 @@ export default function CreateModal() {
             },
             onFinish: () => setLoading(false),
         })
+    }
+
+    const resetForm = () => {
+        setForm({
+            card_number: '',
+            customer_name: '',
+            address: '',
+            province_id: '',
+            city_id: '',
+            subdistrict_id: '',
+            village_id: '',
+            price: 0,
+            payment_type: 'cash',
+            status: 'paid',
+            transaction_at: new Date().toISOString().split('T')[0],
+            is_tempo: 'no',
+            tempo_at: '',
+            note: '',
+            seller_id: auth.user.id,
+            has_dp: false,
+            dp_amount: 0,
+            installment_months: 5,
+            cash_installment_amount: 0,
+        })
+        setItems([{ product_name: '', color: '', size: '', quantity: 1, price: 0 }])
     }
 
     return (
@@ -213,35 +308,36 @@ export default function CreateModal() {
                                     type="date"
                                     value={form.transaction_at}
                                     onChange={handleChange}
+                                    required
                                 />
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="payment_type">Tipe Bayar</Label>
-                                    <Select value={form.payment_type} onValueChange={v => handleChange({ target: { name: 'payment_type', value: v } })}>
+                                    <Select 
+                                        value={form.payment_type} 
+                                        onValueChange={v => setForm(prev => ({ ...prev, payment_type: v }))}
+                                    >
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="cash">Cash</SelectItem>
                                             <SelectItem value="credit">Credit</SelectItem>
-                                            <SelectItem value="tempo">Tempo</SelectItem>
+                                            <SelectItem value="cash_tempo">Cash Tempo</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="status">Status</Label>
-                                    <Select value={form.status} onValueChange={v => handleChange({ target: { name: 'status', value: v } })}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="pending">Pending</SelectItem>
-                                            <SelectItem value="paid">Paid</SelectItem>
-                                            <SelectItem value="partial">Partial</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Input
+                                        id="status"
+                                        name="status"
+                                        value={form.status === 'paid' ? 'Lunas' : 'Belum Lunas'}
+                                        readOnly
+                                        className="bg-muted font-bold"
+                                    />
                                 </div>
                             </div>
 
@@ -257,31 +353,127 @@ export default function CreateModal() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div className="space-y-2">
-                                    <Label>Tempo?</Label>
-                                    <Select value={form.is_tempo} onValueChange={v => handleChange({ target: { name: 'is_tempo', value: v } })}>
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="no">Tidak</SelectItem>
-                                            <SelectItem value="yes">Ya</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                {form.is_tempo === 'yes' && (
-                                    <div className="space-y-2">
-                                        <Label>Tgl Jatuh Tempo</Label>
-                                        <Input
-                                            type="date"
-                                            name="tempo_at"
-                                            value={form.tempo_at}
-                                            onChange={handleChange}
-                                        />
+                            {/* Informasi pembayaran cash */}
+                            {form.payment_type === 'cash' && form.price > 0 && (
+                                <div className="space-y-2 p-3 bg-green-50 border border-green-200 rounded-md">
+                                    <p className="text-sm font-medium text-green-800">
+                                        Pembayaran Cash
+                                    </p>
+                                    <p className="text-sm text-green-700">
+                                        Akan dibuat installment otomatis sebesar:
+                                    </p>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-green-700">Jumlah:</span>
+                                        <span className="font-bold text-green-800">
+                                            Rp {form.price.toLocaleString('id-ID')}
+                                        </span>
                                     </div>
-                                )}
-                            </div>
+                                    <p className="text-xs text-green-600">
+                                        Installment akan otomatis dicatat sebagai pembayaran lunas.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Credit-specific fields */}
+                            {form.payment_type === 'credit' && (
+                                <div className="space-y-3 border-t pt-3">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="installment_months">Jumlah Bulan Angsuran</Label>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {[1,2,3,4,5].map(months => (
+                                                <Button
+                                                    key={months}
+                                                    type="button"
+                                                    variant={form.installment_months === months ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setForm(prev => ({ ...prev, installment_months: months }))}
+                                                >
+                                                    {months} Bulan
+                                                </Button>
+                                            ))}
+                                        </div>
+                                        <Input
+                                            id="installment_months"
+                                            name="installment_months"
+                                            type="number"
+                                            min="1"
+                                            max="36"
+                                            value={form.installment_months}
+                                            onChange={handleChange}
+                                            className="mt-2"
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            Jatuh Tempo: {form.tempo_at && new Date(form.tempo_at).toLocaleDateString('id-ID')}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* DP Section - Show for credit and cash_tempo */}
+                            {(form.payment_type === 'credit' || form.payment_type === 'cash_tempo') && (
+                                <div className="space-y-3 border-t pt-3">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id="has_dp"
+                                            checked={form.has_dp}
+                                            onCheckedChange={(checked) => {
+                                                setForm(prev => ({ 
+                                                    ...prev, 
+                                                    has_dp: checked,
+                                                    dp_amount: checked ? prev.dp_amount : 0
+                                                }))
+                                            }}
+                                        />
+                                        <Label htmlFor="has_dp" className="cursor-pointer">
+                                            Ada DP (Down Payment)
+                                        </Label>
+                                    </div>
+                                    
+                                    {form.has_dp && (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="dp_amount">Nominal DP</Label>
+                                            <Input
+                                                id="dp_amount"
+                                                name="dp_amount"
+                                                type="number"
+                                                min="0"
+                                                max={form.price}
+                                                value={form.dp_amount}
+                                                onChange={handleChange}
+                                                placeholder="Masukkan nominal DP"
+                                                required={form.has_dp}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Sisa: Rp {(form.price - (form.dp_amount || 0)).toLocaleString('id-ID')}
+                                            </p>
+                                            {form.dp_amount > form.price && (
+                                                <p className="text-xs text-red-500">
+                                                    DP tidak boleh melebihi total harga
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Tempo Date - Show for credit and cash_tempo */}
+                            {(form.payment_type === 'credit' || form.payment_type === 'cash_tempo') && (
+                                <div className="space-y-2">
+                                    <Label>Jatuh Tempo</Label>
+                                    <Input
+                                        type="date"
+                                        name="tempo_at"
+                                        value={form.tempo_at}
+                                        readOnly
+                                        className="bg-muted"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        {form.payment_type === 'cash_tempo' 
+                                            ? 'Tempo 1 bulan dari tanggal transaksi'
+                                            : `Tempo ${form.installment_months} bulan dari tanggal transaksi`}
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Customer Info */}
@@ -295,6 +487,7 @@ export default function CreateModal() {
                                     name="card_number"
                                     value={form.card_number}
                                     onChange={handleChange}
+                                    placeholder="Opsional"
                                 />
                             </div>
 
@@ -306,6 +499,7 @@ export default function CreateModal() {
                                     value={form.customer_name}
                                     onChange={handleChange}
                                     className={errors.customer_name ? "border-red-500" : ""}
+                                    required
                                 />
                                 {errors.customer_name && <p className="text-sm text-red-500">{errors.customer_name}</p>}
                             </div>
@@ -313,59 +507,53 @@ export default function CreateModal() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div className="space-y-2">
                                     <Label>Provinsi</Label>
-                                    <Select value={String(form.province_id || '')} onValueChange={v => handleLocationChange('province_id', v)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {provinces.map(p => (
-                                                <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={form.province_id}
+                                        onValueChange={v => handleLocationChange('province_id', v)}
+                                        options={provinces}
+                                        placeholder="Pilih provinsi..."
+                                        searchPlaceholder="Cari provinsi..."
+                                        emptyText="Provinsi tidak ditemukan"
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Kota/Kab</Label>
-                                    <Select value={String(form.city_id || '')} onValueChange={v => handleLocationChange('city_id', v)} disabled={!form.province_id}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {cities.map(c => (
-                                                <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={form.city_id}
+                                        onValueChange={v => handleLocationChange('city_id', v)}
+                                        options={cities}
+                                        placeholder="Pilih kota/kabupaten..."
+                                        searchPlaceholder="Cari kota/kabupaten..."
+                                        emptyText="Kota/Kabupaten tidak ditemukan"
+                                        disabled={!form.province_id}
+                                    />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div className="space-y-2">
                                     <Label>Kecamatan</Label>
-                                    <Select value={String(form.subdistrict_id || '')} onValueChange={v => handleLocationChange('subdistrict_id', v)} disabled={!form.city_id}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {subdistricts.map(s => (
-                                                <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={form.subdistrict_id}
+                                        onValueChange={v => handleLocationChange('subdistrict_id', v)}
+                                        options={subdistricts}
+                                        placeholder="Pilih kecamatan..."
+                                        searchPlaceholder="Cari kecamatan..."
+                                        emptyText="Kecamatan tidak ditemukan"
+                                        disabled={!form.city_id}
+                                    />
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Desa/Kel</Label>
-                                    <Select value={String(form.village_id || '')} onValueChange={v => handleLocationChange('village_id', v)} disabled={!form.subdistrict_id}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Pilih..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="null">-- Kosongkan --</SelectItem>
-                                            {villages.map(v => (
-                                                <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={form.village_id}
+                                        onValueChange={v => handleLocationChange('village_id', v)}
+                                        options={villages}
+                                        placeholder="Pilih desa/kelurahan..."
+                                        searchPlaceholder="Cari desa/kelurahan..."
+                                        emptyText="Desa/Kelurahan tidak ditemukan"
+                                        disabled={!form.subdistrict_id}
+                                    />
                                 </div>
                             </div>
 
@@ -377,6 +565,7 @@ export default function CreateModal() {
                                     value={form.address}
                                     onChange={handleChange}
                                     rows={2}
+                                    required
                                 />
                             </div>
                         </div>
@@ -400,6 +589,7 @@ export default function CreateModal() {
                                         value={item.product_name} 
                                         onChange={e => handleItemChange(index, 'product_name', e.target.value)}
                                         placeholder="Contoh: Kasur Busa"
+                                        required
                                     />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
@@ -408,6 +598,7 @@ export default function CreateModal() {
                                         value={item.color} 
                                         onChange={e => handleItemChange(index, 'color', e.target.value)}
                                         placeholder="Biru"
+                                        required
                                     />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
@@ -416,6 +607,7 @@ export default function CreateModal() {
                                         value={item.size} 
                                         onChange={e => handleItemChange(index, 'size', e.target.value)}
                                         placeholder="160x200"
+                                        required
                                     />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
@@ -425,6 +617,7 @@ export default function CreateModal() {
                                         min="0"
                                         value={item.price} 
                                         onChange={e => handleItemChange(index, 'price', e.target.value)}
+                                        required
                                     />
                                 </div>
                                 <div className="md:col-span-2 space-y-2">
@@ -434,6 +627,7 @@ export default function CreateModal() {
                                         min="1"
                                         value={item.quantity} 
                                         onChange={e => handleItemChange(index, 'quantity', e.target.value)}
+                                        required
                                     />
                                 </div>
                                 <div className="md:col-span-1">

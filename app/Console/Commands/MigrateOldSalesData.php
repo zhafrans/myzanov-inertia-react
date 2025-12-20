@@ -67,13 +67,13 @@ class MigrateOldSalesData extends Command
                         'seller_id' => $sellerId,
                         'payment_type' => $paymentData['payment_type'],
                         'status' => $paymentData['status'],
-                        'transaction_at' => $oldSale->tgl_pengambilan ?? now(),
+                        'transaction_at' => $oldSale->tgl_pengambilan ?? $oldSale->created_at,
                         'is_tempo' => $tempoData['is_tempo'],
                         'tempo_at' => $tempoData['tempo_at'],
                         'note' => $oldSale->ket,
                         'is_printed' => (bool) $oldSale->is_created,
-                        'created_at' => $oldSale->created_at ?? now(),
-                        'updated_at' => $oldSale->updated_at ?? now(),
+                        'created_at' => $oldSale->created_at ?? null,
+                        'updated_at' => $oldSale->updated_at ?? null,
                     ]);
 
                     // 7. Create sales item

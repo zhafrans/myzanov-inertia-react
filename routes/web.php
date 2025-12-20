@@ -85,10 +85,10 @@ Route::middleware('auth')->group(function () {
             Inertia::render('Catalogue/Index')
         )->name('index');
     });
-    Route::prefix('locations')->name('locations.')->group(function () {
-        Route::get('/provinces', [SalesController::class, 'getProvinces'])->name('provinces');
-        Route::get('/cities/{provinceId}', [SalesController::class, 'getCities'])->name('cities');
-        Route::get('/subdistricts/{cityId}', [SalesController::class, 'getSubdistricts'])->name('subdistricts');
-        Route::get('/villages/{subdistrictId}', [SalesController::class, 'getVillages'])->name('villages');
-    });
+});
+Route::prefix('locations')->name('locations.')->group(function () {
+    Route::get('/provinces', [SalesController::class, 'getProvinces'])->name('provinces');
+    Route::get('/cities/{provinceId}', [SalesController::class, 'getCities'])->name('cities');
+    Route::get('/subdistricts/{cityId}', [SalesController::class, 'getSubdistricts'])->name('subdistricts');
+    Route::get('/villages/{subdistrictId}', [SalesController::class, 'getVillages'])->name('villages');
 });

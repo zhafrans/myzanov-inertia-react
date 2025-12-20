@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sale_id')->constrained('sales');
             $table->string('product_name');
+            $table->integer('price_per_item')->nullable();
             $table->string('color');
             $table->string('size');
             $table->integer('quantity');

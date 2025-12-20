@@ -46,6 +46,16 @@ export default function SalesTableRow({ item, collectors }) {
         })
     }
 
+    const formatDate = (dateString) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
     return (
         <>
             <TableRow
@@ -62,8 +72,30 @@ export default function SalesTableRow({ item, collectors }) {
                 <TableCell className={`font-semibold ${item.remaining > 0 ? 'text-red-600' : 'text-green-600'}`}>
                     Rp {item.remaining.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                    {item.last_collected_at || '-'}
+                <TableCell>
+                    {item.last_installment_is_dp ? (
+                        <div className="flex flex-col">
+                            <span className="font-medium text-blue-600">
+                                DP: Rp {item.last_installment_amount.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                                {formatDate(item.last_collected_at)}
+                            </span>
+                        </div>
+                    ) : item.last_collected_at ? (
+                        <div className="flex flex-col">
+                            <span className="font-medium">
+                                {formatDate(item.last_collected_at)}
+                            </span>
+                            {item.last_installment_amount > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                    Rp {item.last_installment_amount.toLocaleString('id-ID')}
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-muted-foreground">-</span>
+                    )}
                 </TableCell>
 
                 {/* Actions */}

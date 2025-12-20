@@ -5,7 +5,7 @@ import SalesTable from "./Partials/SalesTable"
 export default function SalesIndex() {
     return (
         <div className="space-y-4">
-            <SalesToolbar />
+            {/* <SalesToolbar /> */}
             <SalesTable />
         </div>
     )

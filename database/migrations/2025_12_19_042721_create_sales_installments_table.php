@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('sale_id')->constrained('sales');
             $table->decimal('installment_amount', 20);
             $table->timestamp('payment_date');
+            $table->boolean('is_dp')->default(false);
             $table->foreignId('collector_id')->nullable()->constrained('users');
             $table->timestamps();
         });

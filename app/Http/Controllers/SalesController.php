@@ -98,6 +98,23 @@ class SalesController extends Controller
         $sales = $query->paginate($perPage)
             ->withQueryString()
             ->through(function ($sale) {
+                // Ambil installment terakhir yang BUKAN DP (jika ada)
+                $lastNonDpInstallment = $sale->installments
+                    ->where('is_dp', false)
+                    ->sortByDesc('payment_date')
+                    ->first();
+
+                // Ambil installment DP jika ada
+                $dpInstallment = $sale->installments
+                    ->where('is_dp', true)
+                    ->first();
+
+                // Tentukan installment yang akan ditampilkan
+                $installmentToShow = $lastNonDpInstallment ?? $dpInstallment;
+                $isDpToShow = $installmentToShow ? $installmentToShow->is_dp : false;
+                $lastInstallmentAmount = $installmentToShow ? $installmentToShow->installment_amount : 0;
+                $lastPaymentDate = $installmentToShow ? $installmentToShow->payment_date : null;
+
                 return [
                     'id' => $sale->id,
                     'invoice' => $sale->invoice,
@@ -112,9 +129,11 @@ class SalesController extends Controller
                     'transaction_at' => $sale->transaction_at,
                     'price' => (float) $sale->price,
                     'remaining' => (float) $sale->remaining_amount,
-                    'last_collected_at' => $sale->installments->sortByDesc('payment_date')->first()?->payment_date
-                        ? Carbon::parse($sale->installments->sortByDesc('payment_date')->first()->payment_date)->format('Y-m-d')
+                    'last_collected_at' => $lastPaymentDate
+                        ? Carbon::parse($lastPaymentDate)->format('Y-m-d')
                         : null,
+                    'last_installment_is_dp' => $isDpToShow,
+                    'last_installment_amount' => $lastInstallmentAmount ? (float) $lastInstallmentAmount : 0,
                     'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
                     'province_id' => $sale->province_id,
                     'city_id' => $sale->city_id,
@@ -191,6 +210,10 @@ class SalesController extends Controller
             'items.*.color' => 'required|string',
             'items.*.size' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'nullable|numeric|min:0',
+            // DP fields
+            'has_dp' => 'nullable|boolean',
+            'dp_amount' => 'nullable|numeric|min:0',
         ]);
 
         DB::beginTransaction();
@@ -205,22 +228,74 @@ class SalesController extends Controller
             $items = $validated['items'];
             unset($validated['items']);
 
+            // Remove DP fields from sale data
+            $hasDp = $validated['has_dp'] ?? false;
+            $dpAmount = $validated['dp_amount'] ?? 0;
+            unset($validated['has_dp']);
+            unset($validated['dp_amount']);
+
             // Add invoice to sale data
             $validated['invoice'] = $invoice;
 
             // Create sale (without items)
             $sale = Sales::create($validated);
 
-            // Create sale items
+            // Create sale items with price_per_item
             foreach ($items as $item) {
-                $sale->items()->create($item);
+                $sale->items()->create([
+                    'product_name' => $item['product_name'],
+                    'color' => $item['color'],
+                    'size' => $item['size'],
+                    'quantity' => $item['quantity'],
+                    'price_per_item' => $item['price'] ?? 0,
+                ]);
             }
 
-            // Jika pembayaran tempo, buat outstanding record
-            if ($request->is_tempo === 'yes') {
-                $sale->outstanding()->create([
-                    'outstanding_amount' => $request->price
+            // Variabel untuk outstanding amount
+            $outstandingAmount = 0;
+            $isPaid = false;
+
+            if ($request->payment_type === 'cash') {
+                // Untuk cash, buat installment penuh
+                SalesInstallment::create([
+                    'sale_id' => $sale->id,
+                    'installment_amount' => $request->price,
+                    'payment_date' => $request->transaction_at,
+                    'collector_id' => $request->seller_id,
+                    'is_dp' => false,
                 ]);
+
+                // Set outstanding amount ke 0 karena sudah lunas
+                $outstandingAmount = 0;
+                $isPaid = true;
+            } else {
+                // Untuk credit dan cash_tempo, hitung outstanding amount
+                $outstandingAmount = $request->price;
+
+                // Jika ada DP, kurangi outstanding amount
+                if ($hasDp && $dpAmount > 0) {
+                    SalesInstallment::create([
+                        'sale_id' => $sale->id,
+                        'installment_amount' => $dpAmount,
+                        'payment_date' => $request->transaction_at,
+                        'is_dp' => true,
+                        'collector_id' => $request->seller_id,
+                    ]);
+
+                    $outstandingAmount -= $dpAmount;
+                }
+            }
+
+            // SELALU buat outstanding record untuk SEMUA tipe pembayaran
+            $sale->outstanding()->create([
+                'outstanding_amount' => $outstandingAmount
+            ]);
+
+            // Update status jika outstanding sudah <= 0
+            if ($isPaid || $outstandingAmount <= 0) {
+                $sale->update(['status' => 'paid']);
+            } else {
+                $sale->update(['status' => 'unpaid']);
             }
 
             // Log activity
@@ -234,7 +309,8 @@ class SalesController extends Controller
                 'new_values' => [
                     'sale' => $sale->toArray(),
                     'items' => $sale->items->toArray(),
-                    'outstanding' => $request->is_tempo === 'yes' ? ['outstanding_amount' => $request->price] : null
+                    'dp' => $hasDp ? ['amount' => $dpAmount] : null,
+                    'outstanding' => ['outstanding_amount' => $outstandingAmount]
                 ],
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
@@ -396,10 +472,8 @@ class SalesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $sale = Sales::findOrFail($id);
+        $sale = Sales::with(['outstanding'])->findOrFail($id);
         $oldValues = $sale->toArray();
-        $oldItems = $sale->items->toArray();
-        $oldOutstanding = $sale->outstanding?->toArray();
 
         $validated = $request->validate([
             'card_number' => 'nullable|string',
@@ -422,7 +496,16 @@ class SalesController extends Controller
         DB::beginTransaction();
 
         try {
+            // Update sale
             $sale->update($validated);
+
+            // Update status berdasarkan outstanding amount
+            if ($sale->outstanding && $sale->outstanding->outstanding_amount <= 0) {
+                $sale->update(['status' => 'paid']);
+            } else {
+                $sale->update(['status' => 'unpaid']);
+            }
+
             $newValues = $sale->fresh()->toArray();
 
             // Filter field yang tidak perlu di-log
@@ -587,12 +670,26 @@ class SalesController extends Controller
                 'collector_id' => $validated['collector_id'],
             ]);
 
-            // Update outstanding amount jika ada
+            // Update outstanding amount
+            $newOutstanding = $remainingAmount - $validated['installment_amount'];
+
+            // Update outstanding record
             if ($sale->outstanding) {
-                $newOutstanding = $remainingAmount - $validated['installment_amount'];
                 $sale->outstanding()->update([
                     'outstanding_amount' => $newOutstanding
                 ]);
+            } else {
+                // Buat outstanding record jika belum ada
+                $sale->outstanding()->create([
+                    'outstanding_amount' => $newOutstanding
+                ]);
+            }
+
+            // Update status berdasarkan outstanding amount
+            if ($newOutstanding <= 0) {
+                $sale->update(['status' => 'paid']);
+            } else {
+                $sale->update(['status' => 'unpaid']);
             }
 
             // Log activity untuk pembuatan installment
@@ -612,7 +709,7 @@ class SalesController extends Controller
 
             return redirect()->route('sales.show', $id)
                 ->with('success', 'Installment berhasil ditambahkan.')
-                ->with('remaining_amount', $remainingAmount - $validated['installment_amount']);
+                ->with('remaining_amount', $newOutstanding);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal menambahkan installment: ' . $e->getMessage());

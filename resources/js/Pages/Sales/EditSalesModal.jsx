@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 import { useState, useEffect } from "react"
 import { router } from "@inertiajs/react"
 import axios from "axios"
@@ -199,59 +200,53 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-2">
                             <Label>Provinsi</Label>
-                            <Select value={String(form.province_id || '')} onValueChange={v => handleLocationChange('province_id', v)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {provinces.map(p => (
-                                        <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={form.province_id}
+                                onValueChange={v => handleLocationChange('province_id', v)}
+                                options={provinces}
+                                placeholder="Pilih provinsi..."
+                                searchPlaceholder="Cari provinsi..."
+                                emptyText="Provinsi tidak ditemukan"
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>Kota/Kab</Label>
-                            <Select value={String(form.city_id || '')} onValueChange={v => handleLocationChange('city_id', v)} disabled={!form.province_id}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {cities.map(c => (
-                                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={form.city_id}
+                                onValueChange={v => handleLocationChange('city_id', v)}
+                                options={cities}
+                                placeholder="Pilih kota/kabupaten..."
+                                searchPlaceholder="Cari kota/kabupaten..."
+                                emptyText="Kota/Kabupaten tidak ditemukan"
+                                disabled={!form.province_id}
+                            />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-2">
                             <Label>Kecamatan</Label>
-                            <Select value={String(form.subdistrict_id || '')} onValueChange={v => handleLocationChange('subdistrict_id', v)} disabled={!form.city_id}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {subdistricts.map(s => (
-                                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={form.subdistrict_id}
+                                onValueChange={v => handleLocationChange('subdistrict_id', v)}
+                                options={subdistricts}
+                                placeholder="Pilih kecamatan..."
+                                searchPlaceholder="Cari kecamatan..."
+                                emptyText="Kecamatan tidak ditemukan"
+                                disabled={!form.city_id}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label>Desa/Kel</Label>
-                            <Select value={String(form.village_id || '')} onValueChange={v => handleLocationChange('village_id', v)} disabled={!form.subdistrict_id}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="null">-- Kosongkan --</SelectItem>
-                                    {villages.map(v => (
-                                        <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                value={form.village_id}
+                                onValueChange={v => handleLocationChange('village_id', v)}
+                                options={villages}
+                                placeholder="Pilih desa/kelurahan..."
+                                searchPlaceholder="Cari desa/kelurahan..."
+                                emptyText="Desa/Kelurahan tidak ditemukan"
+                                disabled={!form.subdistrict_id}
+                            />
                         </div>
                     </div>
 
