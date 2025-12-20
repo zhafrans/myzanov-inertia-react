@@ -1,8 +1,19 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
+import { useState } from "react";
+import EditInstallmentModal from "../EditInstallmentModal";
 
-export default function SalesInstallments({ data, installments }) {
-    const installmentsData = installments || data.installments || []
+export default function SalesInstallments({
+    data,
+    installments,
+    saleId,
+    collectors,
+}) {
+    const installmentsData = installments || data.installments || [];
+    const [editingInstallment, setEditingInstallment] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     if (installmentsData.length === 0) {
         return (
@@ -16,7 +27,7 @@ export default function SalesInstallments({ data, installments }) {
                     </div>
                 </CardContent>
             </Card>
-        )
+        );
     }
 
     return (
@@ -30,40 +41,111 @@ export default function SalesInstallments({ data, installments }) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {installmentsData.map((installment, index) => (
-                    <Card key={index} className="hover:shadow-md transition-shadow">
+                    <Card
+                        key={installment.id || index}
+                        className="hover:shadow-md transition-shadow"
+                    >
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
                                 <CardTitle className="text-base">
                                     Angsuran {installment.number || index + 1}
                                 </CardTitle>
                                 <Badge variant="outline" className="text-xs">
-                                    #{String(index + 1).padStart(2, '0')}
+                                    #{String(index + 1).padStart(2, "0")}
                                 </Badge>
                             </div>
                         </CardHeader>
-                        
+
                         <CardContent className="text-sm space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Tanggal:</span>
-                                <span className="font-medium">{installment.date}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Nominal:</span>
-                                <span className="font-bold text-green-600">
-                                    Rp {installment.amount?.toLocaleString()}
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">
+                                    Tanggal:
                                 </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                        {installment.date}
+                                    </span>
+                                    {saleId && installment.id && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => {
+                                                setEditingInstallment(
+                                                    installment
+                                                );
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            title="Edit tanggal"
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Collector:</span>
-                                <span className="font-medium">{installment.collector}</span>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">
+                                    Nominal:
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-bold text-green-600">
+                                        Rp{" "}
+                                        {installment.amount?.toLocaleString()}
+                                    </span>
+                                    {saleId && installment.id && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => {
+                                                setEditingInstallment(
+                                                    installment
+                                                );
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            title="Edit nominal"
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">
+                                    Collector:
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">
+                                        {installment.collector}
+                                    </span>
+                                    {saleId && installment.id && (
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => {
+                                                setEditingInstallment(
+                                                    installment
+                                                );
+                                                setIsEditModalOpen(true);
+                                            }}
+                                            title="Edit collector"
+                                        >
+                                            <Pencil className="h-3 w-3" />
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                             {installment.payment_date && (
                                 <div className="pt-2 border-t text-xs text-muted-foreground">
-                                    Dibayar: {new Date(installment.payment_date).toLocaleDateString('id-ID', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
+                                    Dibayar:{" "}
+                                    {new Date(
+                                        installment.payment_date
+                                    ).toLocaleDateString("id-ID", {
+                                        weekday: "long",
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
                                     })}
                                 </div>
                             )}
@@ -72,26 +154,57 @@ export default function SalesInstallments({ data, installments }) {
                 ))}
             </div>
 
+            {/* Edit Installment Modal */}
+            {saleId && editingInstallment && (
+                <EditInstallmentModal
+                    open={isEditModalOpen}
+                    setOpen={setIsEditModalOpen}
+                    saleId={saleId}
+                    installmentId={editingInstallment.id}
+                    installmentData={editingInstallment}
+                    collectors={collectors}
+                    remainingAmount={data.remaining}
+                    onSuccess={() => {
+                        setEditingInstallment(null);
+                    }}
+                />
+            )}
+
             {/* Summary */}
             {data.totalPrice && data.remaining !== undefined && (
                 <Card className="mt-6">
                     <CardContent className="pt-6">
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
-                                <p className="text-sm text-muted-foreground">Total Tagihan</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Total Tagihan
+                                </p>
                                 <p className="text-lg font-bold">
                                     Rp {data.totalPrice.toLocaleString()}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Total Dibayar</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Total Dibayar
+                                </p>
                                 <p className="text-lg font-bold text-green-600">
-                                    Rp {(data.totalPrice - data.remaining).toLocaleString()}
+                                    Rp{" "}
+                                    {(
+                                        data.totalPrice - data.remaining
+                                    ).toLocaleString()}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-sm text-muted-foreground">Sisa Tagihan</p>
-                                <p className={`text-lg font-bold ${data.isLunas ? 'text-green-600' : 'text-red-600'}`}>
+                                <p className="text-sm text-muted-foreground">
+                                    Sisa Tagihan
+                                </p>
+                                <p
+                                    className={`text-lg font-bold ${
+                                        data.isLunas
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                    }`}
+                                >
                                     Rp {data.remaining.toLocaleString()}
                                 </p>
                             </div>
@@ -100,5 +213,5 @@ export default function SalesInstallments({ data, installments }) {
                 </Card>
             )}
         </div>
-    )
+    );
 }

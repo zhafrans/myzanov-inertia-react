@@ -79,9 +79,9 @@ class MigrateOldSalesData extends Command
                     // 7. Create sales item
                     SalesItem::create([
                         'sale_id' => $sale->id,
-                        'product_name' => $oldSale->nama_produk ?? 'Produk',
-                        'color' => $oldSale->warna ?? 'Tidak ada warna',
-                        'size' => $oldSale->size ?? 'Tidak ada size',
+                        'product_name' => $oldSale->nama_produk ?? null,
+                        'color' => $oldSale->warna ?? null,
+                        'size' => $oldSale->size ?? null,
                         'quantity' => 1, // Default quantity 1
                     ]);
 
@@ -96,31 +96,28 @@ class MigrateOldSalesData extends Command
                     ];
 
                     foreach ($installments as $index => $installment) {
-                        if ($installment['date'] && $installment['amount'] > 0) {
+                        if ($installment['amount'] > 0) {
                             $collectorId = $this->getCollectorId($installment['collector']);
 
                             SalesInstallment::create([
                                 'sale_id' => $sale->id,
                                 'installment_amount' => (float) $installment['amount'],
                                 'collector_id' => $collectorId,
-                                'payment_date' => $installment['date'],
-                                'collector_id' => $collectorId,
+                                'payment_date' => $installment['date'] ?? null,
                             ]);
 
                             $totalInstallments += (float) $installment['amount'];
                         }
                     }
 
-                    // 9. Create outstanding jika ada sisa
+                    // 9. Create outstanding (selalu dibuat, walau 0 atau minus)
                     $totalPrice = (float) $oldSale->harga;
                     $outstanding = $totalPrice - $totalInstallments;
 
-                    if ($outstanding > 0) {
-                        SalesOutstanding::create([
-                            'sale_id' => $sale->id,
-                            'outstanding_amount' => $outstanding,
-                        ]);
-                    }
+                    SalesOutstanding::create([
+                        'sale_id' => $sale->id,
+                        'outstanding_amount' => $outstanding,
+                    ]);
                 });
 
                 $successCount++;
@@ -179,31 +176,17 @@ class MigrateOldSalesData extends Command
             return null;
         }
 
+        // rapikan dan bikin lowercase
         $namaSales = strtolower(trim($namaSales));
 
-        $salesMapping = [
-            'umi' => 'umi',
-            'ati' => 'ati',
-            'into' => 'into',
-            'nisya' => 'nisya',
-            'resti' => 'resti',
-            'sri' => 'sri',
-            'ika' => 'ika',
-        ];
+        $user = DB::table('users')
+            ->where('role', 'sales')
+            ->whereRaw('LOWER(name) LIKE ?', ["%{$namaSales}%"])
+            ->first();
 
-        foreach ($salesMapping as $key => $name) {
-            if (str_contains($namaSales, $key)) {
-                $user = DB::table('users')
-                    ->where('name', 'LIKE', '%' . ucfirst($name) . '%')
-                    ->where('role', 'sales')
-                    ->first();
-
-                return $user ? $user->id : null;
-            }
-        }
-
-        return null;
+        return $user?->id ?? null;
     }
+
 
     private function getCollectorId(?string $collectorName): ?int
     {
@@ -211,26 +194,17 @@ class MigrateOldSalesData extends Command
             return null;
         }
 
+        // rapikan dan bikin lowercase
         $collectorName = strtolower(trim($collectorName));
 
-        $collectorMapping = [
-            'lukman' => 'lukman',
-            'toni' => 'toni',
-        ];
+        $user = DB::table('users')
+            ->where('role', 'collector')
+            ->whereRaw('LOWER(name) LIKE ?', ["%{$collectorName}%"])
+            ->first();
 
-        foreach ($collectorMapping as $key => $name) {
-            if (str_contains($collectorName, $key)) {
-                $user = DB::table('users')
-                    ->where('name', 'LIKE', '%' . $name . '%')
-                    ->where('role', 'collector')
-                    ->first();
-
-                return $user ? $user->id : null;
-            }
-        }
-
-        return null;
+        return $user?->id ?? null;
     }
+
 
     private function getLocationData(?string $kecamatan, ?string $kabupaten): array
     {
@@ -273,46 +247,45 @@ class MigrateOldSalesData extends Command
 
     private function getPaymentData($oldSale): array
     {
-        $totalInstallments = 0;
+        $totalPrice = (float) $oldSale->harga;
         $totalPaid = 0;
+        $paymentCount = 0;
+        $firstInstallmentAmount = 0;
 
-        // Hitung total angsuran yang sudah dibayar
+        // Hitung total angsuran yang sudah dibayar dan jumlah installment
         for ($i = 1; $i <= 5; $i++) {
             $angField = 'ang' . $i;
             if ($oldSale->$angField > 0) {
                 $totalPaid += (float) $oldSale->$angField;
-            }
-        }
-
-        $totalPrice = (float) $oldSale->harga;
-
-        // Tentukan payment_type berdasarkan pola angsuran
-        $hasMultiplePayments = false;
-        $paymentCount = 0;
-
-        for ($i = 1; $i <= 5; $i++) {
-            $angField = 'ang' . $i;
-            if ($oldSale->$angField > 0) {
                 $paymentCount++;
+                // Simpan jumlah installment pertama
+                if ($paymentCount == 1) {
+                    $firstInstallmentAmount = (float) $oldSale->$angField;
+                }
             }
         }
 
-        if ($paymentCount > 1) {
-            $paymentType = 'installment';
-        } elseif ($paymentCount == 1) {
+        // Hitung outstanding
+        $outstanding = $totalPrice - $totalPaid;
+
+        // Tentukan payment_type
+        $paymentType = 'credit'; // Default
+
+        // 1. Cek apakah keterangan mengandung 'TEMPO'
+        if ($oldSale->ket && stripos($oldSale->ket, 'TEMPO') !== false) {
+            $paymentType = 'cash_tempo';
+        }
+        // 2. Cek apakah cash (installment = 1 dan jumlah = total price)
+        elseif ($paymentCount == 1 && abs($firstInstallmentAmount - $totalPrice) < 0.01) {
             $paymentType = 'cash';
-        } else {
-            $paymentType = 'pending';
+        }
+        // 3. Cek apakah credit (installment > 1)
+        elseif ($paymentCount > 1) {
+            $paymentType = 'credit';
         }
 
-        // Tentukan status
-        if ($totalPaid >= $totalPrice) {
-            $status = 'paid';
-        } elseif ($totalPaid > 0) {
-            $status = 'partial';
-        } else {
-            $status = 'unpaid';
-        }
+        // Tentukan status berdasarkan outstanding
+        $status = $outstanding > 0 ? 'unpaid' : 'paid';
 
         return [
             'payment_type' => $paymentType,

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -40,6 +41,7 @@ Route::middleware('auth')->group(function () {
     // Installment routes
     Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store');
     Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index');
+    Route::put('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'updateInstallment'])->name('sales.installments.update');
 
 
     // Route::prefix('sales')->name('sales.')->group(function () {
@@ -85,7 +87,12 @@ Route::middleware('auth')->group(function () {
             Inertia::render('Catalogue/Index')
         )->name('index');
     });
+
+    Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);
+    Route::get('/api/dashboard/years', [DashboardController::class, 'getYearOptions']);
 });
+
+
 Route::prefix('locations')->name('locations.')->group(function () {
     Route::get('/provinces', [SalesController::class, 'getProvinces'])->name('provinces');
     Route::get('/cities/{provinceId}', [SalesController::class, 'getCities'])->name('cities');

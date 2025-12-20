@@ -5,8 +5,9 @@ import {
     CardTitle,
     CardContent,
 } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export default function MonthlySalesChart({ data }) {
+export default function MonthlySalesChart({ data, loading = false }) {
     const options = {
         chart: {
             toolbar: { show: false },
@@ -16,7 +17,7 @@ export default function MonthlySalesChart({ data }) {
             width: 3,
         },
         xaxis: {
-            categories: data.months,
+            categories: data?.months || [],
         },
         legend: {
             position: "top",
@@ -29,6 +30,11 @@ export default function MonthlySalesChart({ data }) {
             shared: true,
             intersect: false,
         },
+        yaxis: {
+            title: {
+                text: "Jumlah Penjualan"
+            }
+        }
     }
 
     return (
@@ -37,12 +43,20 @@ export default function MonthlySalesChart({ data }) {
                 <CardTitle>Penjualan Per Bulan (Per Sales)</CardTitle>
             </CardHeader>
             <CardContent>
-                <Chart
-                    type="line"
-                    height={320}
-                    series={data.series}
-                    options={options}
-                />
+                {loading ? (
+                    <Skeleton className="h-80" />
+                ) : data?.series?.length > 0 ? (
+                    <Chart
+                        type="line"
+                        height={320}
+                        series={data.series}
+                        options={options}
+                    />
+                ) : (
+                    <div className="h-80 flex items-center justify-center text-muted-foreground">
+                        Tidak ada data penjualan
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

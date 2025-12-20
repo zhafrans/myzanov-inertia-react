@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('sale_id')->constrained('sales');
             $table->decimal('installment_amount', 20);
-            $table->timestamp('payment_date');
+            $table->timestamp('payment_date')->nullable();
             $table->boolean('is_dp')->default(false);
             $table->foreignId('collector_id')->nullable()->constrained('users');
             $table->timestamps();

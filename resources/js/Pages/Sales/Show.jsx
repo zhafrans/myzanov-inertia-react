@@ -1,43 +1,43 @@
-import AppLayout from "@/Layouts/AppLayout"
-import SalesDetailInfo from "./Partials/SalesDetailInfo"
-import SalesInstallments from "./Partials/SalesInstallments"
-import { Button } from "@/components/ui/button"
-import { Printer, FilePlus, ArrowLeft, Edit } from "lucide-react"
-import { useState } from "react"
-import { router, usePage } from "@inertiajs/react"
-import InputInstallmentModal from "./InputInstallmentModal"
-import EditSalesModal from "./EditSalesModal"
+import AppLayout from "@/Layouts/AppLayout";
+import SalesDetailInfo from "./Partials/SalesDetailInfo";
+import SalesInstallments from "./Partials/SalesInstallments";
+import { Button } from "@/components/ui/button";
+import { Printer, FilePlus, ArrowLeft, Edit } from "lucide-react";
+import { useState } from "react";
+import { router, usePage } from "@inertiajs/react";
+import InputInstallmentModal from "./InputInstallmentModal";
+import EditSalesModal from "./EditSalesModal";
 
 export default function SalesShow() {
     const { sale, collectors } = usePage().props;
-    const [openTagihan, setOpenTagihan] = useState(false)
-    const [openEdit, setOpenEdit] = useState(false)
+    const [openTagihan, setOpenTagihan] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
 
     const handlePrint = () => {
-        window.print()
-    }
+        window.print();
+    };
 
     const handleBack = () => {
-        router.visit(route('sales.index'))
-    }
+        router.visit(route("sales.index"));
+    };
 
     const handleEdit = () => {
-        setOpenEdit(true)
-    }
+        setOpenEdit(true);
+    };
 
     // Format data untuk komponen
     const formattedData = {
         customer: {
             cardNo: sale.card_number || sale.customer.cardNo,
             name: sale.customer_name || sale.customer.name,
-            phone: sale.customer.phone || '-',
+            phone: sale.customer.phone || "-",
         },
         address: {
             street: sale.address || sale.address_info.street,
             subdistrict: sale.subdistrict_name || sale.address_info.subdistrict,
             city: sale.city_name || sale.address_info.city,
-            province: sale.province_name || '',
-            village: sale.village_name || '',
+            province: sale.province_name || "",
+            village: sale.village_name || "",
         },
         salesName: sale.seller || sale.salesName,
         items: sale.items || [],
@@ -51,7 +51,7 @@ export default function SalesShow() {
         note: sale.note,
         isTempo: sale.is_tempo,
         tempoAt: sale.tempo_at,
-    }
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -68,10 +68,11 @@ export default function SalesShow() {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-bold">
-                            Detail Sales - {sale.card_number || 'No Card'}
+                            Detail Sales - {sale.card_number || "No Card"}
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            Invoice: {sale.invoice} | Tanggal: {sale.transaction_date}
+                            Invoice: {sale.invoice} | Tanggal:{" "}
+                            {sale.transaction_date}
                         </p>
                     </div>
                 </div>
@@ -85,11 +86,8 @@ export default function SalesShow() {
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                     </Button>
-                    
-                    <Button 
-                        onClick={handlePrint} 
-                        variant="outline"
-                    >
+
+                    <Button onClick={handlePrint} variant="outline">
                         <Printer className="w-4 h-4 mr-2" />
                         Print
                     </Button>
@@ -108,9 +106,11 @@ export default function SalesShow() {
 
             {/* CONTENT */}
             <SalesDetailInfo data={formattedData} />
-            <SalesInstallments 
-                data={formattedData} 
+            <SalesInstallments
+                data={formattedData}
                 installments={sale.installments}
+                saleId={sale.id}
+                collectors={collectors}
             />
 
             {/* MODAL INPUT TAGIHAN */}
@@ -130,11 +130,7 @@ export default function SalesShow() {
                 saleData={sale}
             />
         </div>
-    )
+    );
 }
 
-SalesShow.layout = page => (
-    <AppLayout title="Detail Sales">
-        {page}
-    </AppLayout>
-)
+SalesShow.layout = (page) => <AppLayout title="Detail Sales">{page}</AppLayout>;

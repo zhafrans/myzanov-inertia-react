@@ -20,7 +20,7 @@ class Sales extends Model
 
     public function outstanding()
     {
-        return $this->hasMany(SalesOutstanding::class, 'sale_id');
+        return $this->hasOne(SalesOutstanding::class, 'sale_id');
     }
 
     public function seller()

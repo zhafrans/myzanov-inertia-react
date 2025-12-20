@@ -24,7 +24,7 @@ class SalesController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Sales::with(['items', 'installments', 'outstanding', 'seller'])
+        $query = Sales::with(['items', 'installments', 'outstanding', 'seller', 'city', 'subdistrict'])
             ->select([
                 'sales.*',
                 DB::raw('(sales.price - COALESCE(SUM(sales_installments.installment_amount), 0)) as remaining_amount')
@@ -125,6 +125,8 @@ class SalesController extends Controller
                     'color' => $sale->items->first()?->color ?? 'N/A',
                     'size' => $sale->items->first()?->size ?? 'N/A',
                     'address' => $sale->address,
+                    'subdistrict_name' => $sale->subdistrict?->name,
+                    'city_name' => $sale->city?->name,
                     'date' => Carbon::parse($sale->transaction_at)->format('Y-m-d'),
                     'transaction_at' => $sale->transaction_at,
                     'price' => (float) $sale->price,
@@ -364,6 +366,7 @@ class SalesController extends Controller
         // Format installments untuk frontend
         $installments = $sale->installments->map(function ($installment, $index) {
             return [
+                'id' => $installment->id,
                 'number' => $index + 1,
                 'date' => Carbon::parse($installment->payment_date)->format('d-m-Y'),
                 'amount' => (float) $installment->installment_amount,
@@ -477,21 +480,43 @@ class SalesController extends Controller
 
         $validated = $request->validate([
             'card_number' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'customer_name' => 'required|string',
+            'price' => 'nullable|numeric|min:0',
+            'customer_name' => 'nullable|string',
+            'phone' => 'nullable|string',
             'province_id' => 'nullable|string',
             'city_id' => 'nullable|string',
             'subdistrict_id' => 'nullable|string',
             'village_id' => 'nullable|string',
-            'address' => 'required|string',
+            'address' => 'nullable|string',
             'seller_id' => 'nullable|exists:users,id',
-            'payment_type' => 'required|string',
-            'status' => 'required|string',
-            'transaction_at' => 'required|date',
-            'is_tempo' => 'nullable|string',
+            'payment_type' => 'nullable|string|in:cash,credit,cash_tempo',
+            'status' => 'nullable|string|in:paid,unpaid',
+            'transaction_at' => 'nullable|date',
+            'is_tempo' => 'nullable|string|in:yes,no',
             'tempo_at' => 'nullable|date',
             'note' => 'nullable|string',
+            // Additional fields that might be sent but not stored
+            'has_dp' => 'nullable|boolean',
+            'dp_amount' => 'nullable|numeric|min:0',
+            'installment_months' => 'nullable|integer|min:1|max:36',
+            'cash_installment_amount' => 'nullable|numeric|min:0',
         ]);
+
+        // Remove fields that are not in the sales table
+        unset($validated['has_dp']);
+        unset($validated['dp_amount']);
+        unset($validated['installment_months']);
+        unset($validated['cash_installment_amount']);
+
+        // Convert seller_id to integer if it's a string
+        if (isset($validated['seller_id']) && $validated['seller_id'] !== null) {
+            $validated['seller_id'] = (int) $validated['seller_id'];
+        }
+
+        // Convert is_tempo to proper format
+        if (isset($validated['is_tempo'])) {
+            $validated['is_tempo'] = $validated['is_tempo'] === 'yes' ? 'yes' : 'no';
+        }
 
         DB::beginTransaction();
 
@@ -499,11 +524,19 @@ class SalesController extends Controller
             // Update sale
             $sale->update($validated);
 
-            // Update status berdasarkan outstanding amount
-            if ($sale->outstanding && $sale->outstanding->outstanding_amount <= 0) {
-                $sale->update(['status' => 'paid']);
+            // Update status berdasarkan outstanding amount (jika ada outstanding record)
+            if ($sale->outstanding) {
+                if ($sale->outstanding->outstanding_amount <= 0) {
+                    $sale->update(['status' => 'paid']);
+                } else {
+                    $sale->update(['status' => 'unpaid']);
+                }
             } else {
-                $sale->update(['status' => 'unpaid']);
+                // Jika tidak ada outstanding, gunakan status dari request
+                // Tapi tetap validasi berdasarkan payment type
+                if ($validated['payment_type'] === 'cash') {
+                    $sale->update(['status' => 'paid']);
+                }
             }
 
             $newValues = $sale->fresh()->toArray();
@@ -713,6 +746,108 @@ class SalesController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal menambahkan installment: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update an installment.
+     */
+    public function updateInstallment(Request $request, string $saleId, string $installmentId)
+    {
+        $validated = $request->validate([
+            'installment_amount' => 'required|numeric|min:0',
+            'payment_date' => 'required|date',
+            'collector_id' => 'nullable|exists:users,id',
+        ]);
+
+        $sale = Sales::with(['installments', 'outstanding'])->findOrFail($saleId);
+        $installment = SalesInstallment::findOrFail($installmentId);
+
+        // Pastikan installment milik sale yang benar
+        if ($installment->sale_id != $sale->id) {
+            return back()->withErrors([
+                'installment' => 'Installment tidak ditemukan untuk sale ini.'
+            ]);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Simpan nilai lama untuk perhitungan dan activity log
+            $oldAmount = $installment->installment_amount;
+            $oldPaymentDate = $installment->payment_date;
+            $oldCollectorId = $installment->collector_id;
+
+            // Hitung total pembayaran tanpa installment yang akan diupdate
+            $totalPaid = $sale->installments()
+                ->where('id', '!=', $installmentId)
+                ->sum('installment_amount');
+            
+            $remainingAmount = $sale->price - $totalPaid;
+
+            // Validasi apakah jumlah installment baru tidak melebihi sisa tagihan
+            if ($validated['installment_amount'] > $remainingAmount) {
+                return back()->withErrors([
+                    'installment_amount' => 'Jumlah installment melebihi sisa tagihan yang tersedia.'
+                ]);
+            }
+
+            // Update installment
+            $installment->update([
+                'installment_amount' => $validated['installment_amount'],
+                'payment_date' => $validated['payment_date'],
+                'collector_id' => $validated['collector_id'],
+            ]);
+
+            // Hitung ulang outstanding amount dengan installment yang sudah diupdate
+            $newTotalPaid = $sale->installments()->sum('installment_amount');
+            $newOutstanding = $sale->price - $newTotalPaid;
+
+            // Update outstanding record
+            if ($sale->outstanding) {
+                $sale->outstanding()->update([
+                    'outstanding_amount' => $newOutstanding
+                ]);
+            } else {
+                // Buat outstanding record jika belum ada
+                $sale->outstanding()->create([
+                    'outstanding_amount' => $newOutstanding
+                ]);
+            }
+
+            // Update status berdasarkan outstanding amount
+            if ($newOutstanding <= 0) {
+                $sale->update(['status' => 'paid']);
+            } else {
+                $sale->update(['status' => 'unpaid']);
+            }
+
+            // Log activity untuk update installment
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'update',
+                'module' => 'sales_installments',
+                'description' => "Mengupdate installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $installment->id,
+                'model_type' => SalesInstallment::class,
+                'old_values' => [
+                    'installment_amount' => $oldAmount,
+                    'payment_date' => $oldPaymentDate,
+                    'collector_id' => $oldCollectorId,
+                ],
+                'new_values' => $installment->fresh()->toArray(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('sales.show', $saleId)
+                ->with('success', 'Installment berhasil diupdate.')
+                ->with('remaining_amount', $newOutstanding);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal mengupdate installment: ' . $e->getMessage());
         }
     }
 

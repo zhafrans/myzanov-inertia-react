@@ -11,10 +11,10 @@ return new class extends Migration
         Schema::create('sales_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sale_id')->constrained('sales');
-            $table->string('product_name');
+            $table->string('product_name')->nullable();
             $table->integer('price_per_item')->nullable();
-            $table->string('color');
-            $table->string('size');
+            $table->string('color')->nullable();
+            $table->string('size')->nullable();
             $table->integer('quantity');
             $table->timestamps();
         });
