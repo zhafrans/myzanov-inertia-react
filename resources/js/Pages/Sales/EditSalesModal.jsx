@@ -33,6 +33,9 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
     const [subdistricts, setSubdistricts] = useState([]);
     const [villages, setVillages] = useState([]);
 
+    // Users/Sellers Data
+    const [users, setUsers] = useState([]);
+
     // Initialize form dengan data dari props
     useEffect(() => {
         if (open && saleData) {
@@ -91,6 +94,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
 
             // Initial fetch of location data
             fetchProvinces();
+            fetchUsers();
             if (saleData.province_id) fetchCities(saleData.province_id);
             if (saleData.city_id) fetchSubdistricts(saleData.city_id);
             if (saleData.subdistrict_id) fetchVillages(saleData.subdistrict_id);
@@ -216,6 +220,15 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                 route("locations.villages", subdistrictId)
             );
             setVillages(res.data);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get(route("api.users"));
+            setUsers(res.data);
         } catch (error) {
             console.error(error);
         }
@@ -428,6 +441,30 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         {errors.address && (
                             <p className="text-sm text-red-500">
                                 {errors.address}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Nama Sales */}
+                    <div className="space-y-2">
+                        <Label htmlFor="seller_id">Nama Sales</Label>
+                        <SearchableSelect
+                            value={form.seller_id?.toString() || ""}
+                            onValueChange={(v) =>
+                                handleSelectChange(
+                                    "seller_id",
+                                    v ? Number(v) : null
+                                )
+                            }
+                            options={users}
+                            placeholder="Pilih nama sales..."
+                            searchPlaceholder="Cari nama sales..."
+                            emptyText="Sales tidak ditemukan"
+                            className={errors.seller_id ? "border-red-500" : ""}
+                        />
+                        {errors.seller_id && (
+                            <p className="text-sm text-red-500">
+                                {errors.seller_id}
                             </p>
                         )}
                     </div>

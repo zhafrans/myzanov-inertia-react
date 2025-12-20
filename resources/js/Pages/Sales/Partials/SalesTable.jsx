@@ -20,14 +20,13 @@ export default function SalesTable() {
     const {
         sales,
         filters: initialFilters,
-        availableSizes,
         collectors,
     } = usePage().props;
 
     const [filters, setFilters] = useState({
-        size: initialFilters.size || "all",
         sort: initialFilters.sort || "desc",
         status: initialFilters.status || "all",
+        payment_type: initialFilters.payment_type || "all",
         notCollectedThisMonth: initialFilters.notCollectedThisMonth || false,
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
@@ -104,7 +103,6 @@ export default function SalesTable() {
                     <SalesFilters
                         filters={filters}
                         setFilters={handleFilterChange}
-                        availableSizes={availableSizes}
                     />
                 </div>
             </div>

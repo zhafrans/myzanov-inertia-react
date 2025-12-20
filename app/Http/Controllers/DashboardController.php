@@ -66,6 +66,12 @@ class DashboardController extends Controller
         // 8. Top Subdistrict (default limit 5)
         $topSubdistrict = $this->getTopSubdistrictData($startDate, $endDate, false, 5);
 
+        // 9. Sales by Payment Type (Pie Chart)
+        $salesByPaymentType = $this->getSalesByPaymentTypeData($startDate, $endDate);
+
+        // 10. Sales by Status (Pie Chart)
+        $salesByStatus = $this->getSalesByStatusData($startDate, $endDate);
+
         return Inertia::render('Dashboard', [
             'stats' => [
                 'totalTanggungan' => 'Rp ' . number_format($totalTanggungan, 0, ',', '.'),
@@ -74,6 +80,8 @@ class DashboardController extends Controller
                 'sudahLunas' => $sudahLunas,
                 'monthlySales' => $monthlySales,
                 'salesByUser' => $salesByUser,
+                'salesByPaymentType' => $salesByPaymentType,
+                'salesByStatus' => $salesByStatus,
                 'topProduct' => $topProduct,
                 'topSize' => $topSize,
                 'topColor' => $topColor,
@@ -229,6 +237,54 @@ class DashboardController extends Controller
         return [
             'labels' => $salesByUser->pluck('name')->toArray(),
             'values' => $salesByUser->pluck('total_sales')->toArray(),
+        ];
+    }
+
+    /**
+     * Get sales data by payment type (for pie chart)
+     */
+    private function getSalesByPaymentTypeData($startDate, $endDate, $allTime = false)
+    {
+        $query = Sales::select(
+            'sales.payment_type as name',
+            DB::raw('COUNT(sales.id) as total_sales')
+        );
+
+        if (!$allTime && $startDate && $endDate) {
+            $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+
+        $salesByPaymentType = $query->groupBy('sales.payment_type')
+            ->orderByDesc('total_sales')
+            ->get();
+
+        return [
+            'labels' => $salesByPaymentType->pluck('name')->toArray(),
+            'values' => $salesByPaymentType->pluck('total_sales')->toArray(),
+        ];
+    }
+
+    /**
+     * Get sales data by status (for pie chart)
+     */
+    private function getSalesByStatusData($startDate, $endDate, $allTime = false)
+    {
+        $query = Sales::select(
+            'sales.status as name',
+            DB::raw('COUNT(sales.id) as total_sales')
+        );
+
+        if (!$allTime && $startDate && $endDate) {
+            $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+
+        $salesByStatus = $query->groupBy('sales.status')
+            ->orderByDesc('total_sales')
+            ->get();
+
+        return [
+            'labels' => $salesByStatus->pluck('name')->toArray(),
+            'values' => $salesByStatus->pluck('total_sales')->toArray(),
         ];
     }
 
@@ -414,6 +470,8 @@ class DashboardController extends Controller
             'summary' => $this->getGlobalSummaryData(), // Global, tidak terpengaruh filter
             'monthlySales' => $this->getMonthlySalesData($startDate, $endDate, $allTime),
             'salesByUser' => $this->getSalesByUserData($startDate, $endDate, $allTime),
+            'salesByPaymentType' => $this->getSalesByPaymentTypeData($startDate, $endDate, $allTime),
+            'salesByStatus' => $this->getSalesByStatusData($startDate, $endDate, $allTime),
             'topProduct' => $this->getTopProductData($startDate, $endDate, $allTime, $topProductLimit),
             'topSize' => $this->getTopSizeData($startDate, $endDate, $allTime, $topSizeLimit),
             'topColor' => $this->getTopColorData($startDate, $endDate, $allTime, $topColorLimit),

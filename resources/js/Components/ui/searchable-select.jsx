@@ -8,7 +8,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { ScrollArea } from "@/components/ui/scroll-area"
 
 export function SearchableSelect({ 
   value, 
@@ -67,7 +66,7 @@ export function SearchableSelect({
               className="h-9"
             />
           </div>
-          <ScrollArea className="h-[300px]">
+          <div className="max-h-[300px] overflow-y-auto">
             <div className="p-1">
               {filteredOptions.length === 0 ? (
                 <div className="py-6 text-center text-sm text-muted-foreground">
@@ -97,7 +96,7 @@ export function SearchableSelect({
                 })
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

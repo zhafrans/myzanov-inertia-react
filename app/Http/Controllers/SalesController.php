@@ -24,7 +24,7 @@ class SalesController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Sales::with(['items', 'installments', 'outstanding', 'seller', 'city', 'subdistrict'])
+        $query = Sales::with(['items', 'installments.collector', 'outstanding', 'seller', 'city', 'subdistrict'])
             ->select([
                 'sales.*',
                 DB::raw('(sales.price - COALESCE(SUM(sales_installments.installment_amount), 0)) as remaining_amount')
@@ -32,11 +32,9 @@ class SalesController extends Controller
             ->leftJoin('sales_installments', 'sales.id', '=', 'sales_installments.sale_id')
             ->groupBy('sales.id');
 
-        // Filter berdasarkan size
-        if ($request->filled('size') && $request->size !== 'all') {
-            $query->whereHas('items', function ($q) use ($request) {
-                $q->where('size', $request->size);
-            });
+        // Filter berdasarkan payment type
+        if ($request->filled('payment_type') && $request->payment_type !== 'all') {
+            $query->where('sales.payment_type', $request->payment_type);
         }
 
         // Filter berdasarkan status lunas
@@ -114,6 +112,7 @@ class SalesController extends Controller
                 $isDpToShow = $installmentToShow ? $installmentToShow->is_dp : false;
                 $lastInstallmentAmount = $installmentToShow ? $installmentToShow->installment_amount : 0;
                 $lastPaymentDate = $installmentToShow ? $installmentToShow->payment_date : null;
+                $lastCollectorName = $installmentToShow && $installmentToShow->collector ? $installmentToShow->collector->name : null;
 
                 return [
                     'id' => $sale->id,
@@ -136,6 +135,7 @@ class SalesController extends Controller
                         : null,
                     'last_installment_is_dp' => $isDpToShow,
                     'last_installment_amount' => $lastInstallmentAmount ? (float) $lastInstallmentAmount : 0,
+                    'last_collector_name' => $lastCollectorName,
                     'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
                     'province_id' => $sale->province_id,
                     'city_id' => $sale->city_id,
@@ -149,25 +149,20 @@ class SalesController extends Controller
                 ];
             });
 
-        // Get unique sizes for filter
-        $sizes = SalesItem::select('size')
-            ->distinct()
-            ->orderBy('size')
-            ->pluck('size');
-
         // Get collectors
         $collectors = User::select('id', 'name')->orderBy('name')->get();
 
         return Inertia::render('Sales/Index', [
             'sales' => $sales,
             'filters' => [
-                'size' => $request->size ?? 'all',
                 'sort' => $request->sort ?? 'desc',
                 'status' => $request->status ?? 'all',
+                'payment_type' => $request->payment_type ?? 'all',
                 'notCollectedThisMonth' => $request->boolean('notCollectedThisMonth'),
                 'search' => $request->search ?? '',
+                'startDate' => $request->startDate ?? '',
+                'endDate' => $request->endDate ?? '',
             ],
-            'availableSizes' => $sizes,
             'collectors' => $collectors,
         ]);
     }
@@ -195,12 +190,12 @@ class SalesController extends Controller
             'card_number' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'customer_name' => 'required|string',
-            'province_id' => 'nullable|string',
-            'city_id' => 'nullable|string',
-            'subdistrict_id' => 'nullable|string',
+            'province_id' => 'required',
+            'city_id' => 'required|string',
+            'subdistrict_id' => 'required|string',
             'village_id' => 'nullable|string',
             'address' => 'required|string',
-            'seller_id' => 'nullable|exists:users,id',
+            'seller_id' => 'required|exists:users,id',
             'payment_type' => 'required|string',
             'status' => 'required|string',
             'transaction_at' => 'required|date',
@@ -212,10 +207,10 @@ class SalesController extends Controller
             'items.*.color' => 'required|string',
             'items.*.size' => 'required|string',
             'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'nullable|numeric|min:0',
+            'items.*.price' => 'required|numeric|min:0',
             // DP fields
             'has_dp' => 'nullable|boolean',
-            'dp_amount' => 'nullable|numeric|min:0',
+            'dp_amount' => 'nullable|numeric|min:0|required_if:has_dp,true',
         ]);
 
         DB::beginTransaction();
@@ -232,7 +227,7 @@ class SalesController extends Controller
 
             // Remove DP fields from sale data
             $hasDp = $validated['has_dp'] ?? false;
-            $dpAmount = $validated['dp_amount'] ?? 0;
+            $dpAmount = $validated['dp_amount'] ?? null;
             unset($validated['has_dp']);
             unset($validated['dp_amount']);
 
@@ -263,7 +258,7 @@ class SalesController extends Controller
                     'sale_id' => $sale->id,
                     'installment_amount' => $request->price,
                     'payment_date' => $request->transaction_at,
-                    'collector_id' => $request->seller_id,
+                    'collector_id' => null,
                     'is_dp' => false,
                 ]);
 
@@ -275,13 +270,13 @@ class SalesController extends Controller
                 $outstandingAmount = $request->price;
 
                 // Jika ada DP, kurangi outstanding amount
-                if ($hasDp && $dpAmount > 0) {
+                if ($hasDp && $dpAmount !== null && $dpAmount > 0) {
                     SalesInstallment::create([
                         'sale_id' => $sale->id,
                         'installment_amount' => $dpAmount,
                         'payment_date' => $request->transaction_at,
                         'is_dp' => true,
-                        'collector_id' => $request->seller_id,
+                        'collector_id' => null,
                     ]);
 
                     $outstandingAmount -= $dpAmount;
@@ -897,14 +892,20 @@ class SalesController extends Controller
         return response()->json($villages);
     }
 
+    public function getUsers()
+    {
+        $users = User::select('id', 'name')->orderBy('name')->get();
+        return response()->json($users);
+    }
+
     /**
      * Export sales data to Excel
      */
     public function export(Request $request)
     {
         $filters = $request->only([
-            'size',
             'status',
+            'payment_type',
             'startDate',
             'endDate',
             'search',

@@ -2,6 +2,8 @@ import AppLayout from "@/Layouts/AppLayout";
 import SummaryCards from "./Partials/SummaryCards";
 import MonthlySalesChart from "./Partials/MonthlySalesChart";
 import SalesPieChart from "./Partials/SalesPieChart";
+import PaymentTypePieChart from "./Partials/PaymentTypePieChart";
+import StatusPieChart from "./Partials/StatusPieChart";
 import TopProduct from "./Partials/TopProduct";
 import TopSize from "./Partials/TopSize";
 import TopColor from "./Partials/TopColor";
@@ -89,6 +91,14 @@ export default function Dashboard() {
                 salesByUser: {
                     labels: ["Umi", "Bihan", "Dilham", "Ati"],
                     values: [120, 80, 65, 55],
+                },
+                salesByPaymentType: {
+                    labels: ["cash", "credit", "cash_tempo"],
+                    values: [150, 100, 70],
+                },
+                salesByStatus: {
+                    labels: ["paid", "unpaid"],
+                    values: [200, 120],
                 },
                 topProduct: [
                     { name: "Sepatu A", total: 120 },
@@ -197,6 +207,17 @@ export default function Dashboard() {
                         </div>
                         <SalesPieChart
                             data={stats.salesByUser}
+                            loading={loading}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <PaymentTypePieChart
+                            data={stats.salesByPaymentType}
+                            loading={loading}
+                        />
+                        <StatusPieChart
+                            data={stats.salesByStatus}
                             loading={loading}
                         />
                     </div>

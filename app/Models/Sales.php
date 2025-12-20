@@ -28,6 +28,11 @@ class Sales extends Model
         return $this->belongsTo(User::class, 'seller_id');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function province()
     {
         return $this->belongsTo(Province::class, 'province_id');

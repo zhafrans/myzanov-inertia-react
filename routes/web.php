@@ -99,3 +99,7 @@ Route::prefix('locations')->name('locations.')->group(function () {
     Route::get('/subdistricts/{cityId}', [SalesController::class, 'getSubdistricts'])->name('subdistricts');
     Route::get('/villages/{subdistrictId}', [SalesController::class, 'getVillages'])->name('villages');
 });
+
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/users', [SalesController::class, 'getUsers'])->name('users');
+});

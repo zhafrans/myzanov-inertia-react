@@ -1,21 +1,21 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select"
-import { Filter } from "lucide-react"
+} from "@/components/ui/select";
+import { Filter } from "lucide-react";
 
-export default function SalesFilters({ filters, setFilters, availableSizes }) {
+export default function SalesFilters({ filters, setFilters }) {
     return (
         <Popover>
             <PopoverTrigger asChild>
@@ -31,22 +31,30 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                     <p className="text-sm font-semibold">Rentang Tanggal</p>
                     <div className="space-y-2">
                         <div>
-                            <Label htmlFor="startDate" className="text-xs">Dari Tanggal</Label>
+                            <Label htmlFor="startDate" className="text-xs">
+                                Dari Tanggal
+                            </Label>
                             <Input
                                 id="startDate"
                                 type="date"
-                                value={filters.startDate || ''}
-                                onChange={e => setFilters({ startDate: e.target.value })}
+                                value={filters.startDate || ""}
+                                onChange={(e) =>
+                                    setFilters({ startDate: e.target.value })
+                                }
                                 className="mt-1"
                             />
                         </div>
                         <div>
-                            <Label htmlFor="endDate" className="text-xs">Sampai Tanggal</Label>
+                            <Label htmlFor="endDate" className="text-xs">
+                                Sampai Tanggal
+                            </Label>
                             <Input
                                 id="endDate"
                                 type="date"
-                                value={filters.endDate || ''}
-                                onChange={e => setFilters({ endDate: e.target.value })}
+                                value={filters.endDate || ""}
+                                onChange={(e) =>
+                                    setFilters({ endDate: e.target.value })
+                                }
                                 className="mt-1"
                             />
                         </div>
@@ -54,13 +62,15 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                 </div>
 
                 <div className="border-t pt-3 space-y-4">
-                    {/* Filter Size */}
+                    {/* Filter Payment Type */}
                     <div>
-                        <p className="text-sm font-medium mb-1">Size</p>
+                        <p className="text-sm font-medium mb-1">
+                            Tipe Pembayaran
+                        </p>
                         <Select
-                            value={filters.size}
-                            onValueChange={v =>
-                                setFilters({ size: v })
+                            value={filters.payment_type || "all"}
+                            onValueChange={(v) =>
+                                setFilters({ payment_type: v })
                             }
                         >
                             <SelectTrigger>
@@ -68,9 +78,11 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua</SelectItem>
-                                {availableSizes?.map(size => (
-                                    <SelectItem key={size} value={size}>{size}</SelectItem>
-                                ))}
+                                <SelectItem value="cash">Cash</SelectItem>
+                                <SelectItem value="credit">Credit</SelectItem>
+                                <SelectItem value="cash_tempo">
+                                    Cash Tempo
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -82,9 +94,7 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                         </p>
                         <Select
                             value={filters.sort}
-                            onValueChange={v =>
-                                setFilters({ sort: v })
-                            }
+                            onValueChange={(v) => setFilters({ sort: v })}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Terbaru/Terlama" />
@@ -101,17 +111,19 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                         <p className="text-sm font-medium mb-1">Status Lunas</p>
                         <Select
                             value={filters.status}
-                            onValueChange={v =>
-                                setFilters({ status: v })
-                            }
+                            onValueChange={(v) => setFilters({ status: v })}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Semua" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Semua</SelectItem>
-                                <SelectItem value="paid">Sudah Lunas</SelectItem>
-                                <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                                <SelectItem value="paid">
+                                    Sudah Lunas
+                                </SelectItem>
+                                <SelectItem value="unpaid">
+                                    Belum Lunas
+                                </SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -122,7 +134,7 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                             type="checkbox"
                             id="notCollectedThisMonth"
                             checked={filters.notCollectedThisMonth || false}
-                            onChange={e =>
+                            onChange={(e) =>
                                 setFilters({
                                     notCollectedThisMonth: e.target.checked,
                                 })
@@ -139,5 +151,5 @@ export default function SalesFilters({ filters, setFilters, availableSizes }) {
                 </div>
             </PopoverContent>
         </Popover>
-    )
+    );
 }

@@ -105,12 +105,22 @@ export default function SalesTableRow({ item, collectors }) {
                             </span>
                             <span className="text-xs text-muted-foreground">
                                 {formatDate(item.last_collected_at)}
+                                {item.last_collector_name && (
+                                    <span className="ml-1 text-xs">
+                                        - {item.last_collector_name}
+                                    </span>
+                                )}
                             </span>
                         </div>
                     ) : item.last_collected_at ? (
                         <div className="flex flex-col">
                             <span className="font-medium">
                                 {formatDate(item.last_collected_at)}
+                                {item.last_collector_name && (
+                                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                        - {item.last_collector_name}
+                                    </span>
+                                )}
                             </span>
                             {item.last_installment_amount > 0 && (
                                 <span className="text-xs text-muted-foreground">
