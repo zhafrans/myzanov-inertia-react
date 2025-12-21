@@ -1,37 +1,38 @@
-export default function SalesPagination({
-    page,
-    setPage,
-    total,
-    perPage,
-}) {
-    const totalPages = Math.ceil(total / perPage)
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { router } from "@inertiajs/react"
 
-    if (totalPages <= 1) return null
+export default function CataloguePagination({ links }) {
+    if (!links || links.length <= 1) return null
+
+    const getButtonVariant = (url, label) => {
+        if (!url) return "outline"
+        if (label === "&laquo; Previous" || label === "Next &raquo;") return "outline"
+        if (url.includes('page=')) return "outline"
+        return "secondary"
+    }
 
     return (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div>
-                Menampilkan {(page - 1) * perPage + 1}–
-                {Math.min(page * perPage, total)} dari {total}
-            </div>
-
-            <div className="flex gap-2">
-                <button
-                    onClick={() => setPage(p => p - 1)}
-                    disabled={page === 1}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
+        <div className="flex items-center justify-center gap-2">
+            {links.map((link, index) => (
+                <Button
+                    type="button"
+                    key={index}
+                    variant={getButtonVariant(link.url, link.label)}
+                    size="icon"
+                    onClick={() => link.url && router.get(link.url)}
+                    disabled={!link.url || link.active}
+                    className={link.active ? "bg-primary text-primary-foreground" : ""}
                 >
-                    Prev
-                </button>
-
-                <button
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={page === totalPages}
-                    className="px-3 py-1 border rounded disabled:opacity-50"
-                >
-                    Next
-                </button>
-            </div>
+                    {link.label.includes('Previous') || link.label.includes('pagination.previous') ? (
+                        <ChevronLeft className="w-4 h-4" />
+                    ) : link.label.includes('Next') || link.label.includes('pagination.next') ? (
+                        <ChevronRight className="w-4 h-4" />
+                    ) : (
+                        <span dangerouslySetInnerHTML={{ __html: link.label }} />
+                    )}
+                </Button>
+            ))}
         </div>
     )
 }

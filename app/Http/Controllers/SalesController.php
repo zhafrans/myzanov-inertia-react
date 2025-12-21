@@ -15,6 +15,7 @@ use App\Models\Village;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SalesController extends Controller
@@ -297,7 +298,7 @@ class SalesController extends Controller
 
             // Log activity
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'create',
                 'module' => 'sales',
                 'description' => "Membuat penjualan baru: {$sale->invoice} - {$sale->customer_name}",
@@ -322,7 +323,7 @@ class SalesController extends Controller
 
             // Log error activity
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'create',
                 'module' => 'sales',
                 'description' => "Gagal membuat penjualan: " . $e->getMessage(),
@@ -556,7 +557,7 @@ class SalesController extends Controller
             // Log activity
             if (!empty($changedFields)) {
                 ActivityLog::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                     'action' => 'update',
                     'module' => 'sales',
                     'description' => "Mengupdate penjualan: {$sale->invoice} - {$sale->customer_name}",
@@ -569,7 +570,7 @@ class SalesController extends Controller
                 ]);
             } else {
                 ActivityLog::create([
-                    'user_id' => auth()->id(),
+                    'user_id' => Auth::id(),
                     'action' => 'update',
                     'module' => 'sales',
                     'description' => "Mencoba mengupdate penjualan: {$sale->invoice} - {$sale->customer_name} (tidak ada perubahan)",
@@ -588,7 +589,7 @@ class SalesController extends Controller
             DB::rollBack();
 
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'update',
                 'module' => 'sales',
                 'description' => "Gagal mengupdate penjualan {$sale->invoice}: " . $e->getMessage(),
@@ -627,7 +628,7 @@ class SalesController extends Controller
 
             // Log activity
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'delete',
                 'module' => 'sales',
                 'description' => "Menghapus penjualan: {$oldValues['invoice']} - {$oldValues['customer_name']}",
@@ -651,7 +652,7 @@ class SalesController extends Controller
             DB::rollBack();
 
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'delete',
                 'module' => 'sales',
                 'description' => "Gagal menghapus penjualan: " . $e->getMessage(),
@@ -722,7 +723,7 @@ class SalesController extends Controller
 
             // Log activity untuk pembuatan installment
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'create',
                 'module' => 'sales_installments',
                 'description' => "Membuat installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
@@ -819,7 +820,7 @@ class SalesController extends Controller
 
             // Log activity untuk update installment
             ActivityLog::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'action' => 'update',
                 'module' => 'sales_installments',
                 'description' => "Mengupdate installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
@@ -919,5 +920,542 @@ class SalesController extends Controller
             new \App\Exports\SalesExport($filters),
             $filename
         );
+    }
+
+    /**
+     * Collector index - melihat riwayat tagihan
+     */
+    public function collectorIndex(Request $request)
+    {
+        $currentUser = Auth::user();
+        $currentUserId = $currentUser->id;
+        $currentUserRole = $currentUser->role ?? null;
+
+        // Jika role != collector, bisa pilih collector (default: semua)
+        // Jika role == collector, hanya tampilkan data collector tersebut
+        if ($currentUserRole === 'collector') {
+            $selectedCollectorId = $currentUserId;
+            $showAllCollectors = false;
+        } else {
+            // Jika ada filter collector_id, gunakan itu
+            // Jika tidak ada, tampilkan semua (null = semua)
+            $selectedCollectorId = $request->input('collector_id');
+            $showAllCollectors = $selectedCollectorId === null || $selectedCollectorId === 'all' || $selectedCollectorId === '';
+        }
+
+        // Query untuk sales yang memiliki installment
+        // Load semua installments untuk keperluan display
+        $query = Sales::with(['items', 'installments' => function ($q) {
+            $q->whereNotNull('collector_id')
+                ->with('collector')
+                ->orderBy('payment_date', 'desc');
+        }, 'outstanding', 'seller', 'city', 'subdistrict'])
+            ->select([
+                'sales.*',
+                DB::raw('(sales.price - COALESCE(SUM(sales_installments.installment_amount), 0)) as remaining_amount')
+            ])
+            ->leftJoin('sales_installments', 'sales.id', '=', 'sales_installments.sale_id')
+            ->groupBy('sales.id');
+
+        // Filter berdasarkan collector_id jika dipilih
+        if (!$showAllCollectors && $selectedCollectorId) {
+            $query->whereHas('installments', function ($q) use ($selectedCollectorId) {
+                $q->where('collector_id', $selectedCollectorId);
+            });
+        } else {
+            // Tampilkan semua sales yang memiliki installment (dari collector manapun)
+            $query->whereHas('installments', function ($q) {
+                $q->whereNotNull('collector_id');
+            });
+        }
+
+        // Filter berdasarkan payment type
+        if ($request->filled('payment_type') && $request->payment_type !== 'all') {
+            $query->where('sales.payment_type', $request->payment_type);
+        }
+
+        // Filter berdasarkan status lunas
+        if ($request->filled('status') && $request->status !== 'all') {
+            if ($request->status === 'paid') {
+                $query->havingRaw('remaining_amount <= 0');
+            } elseif ($request->status === 'unpaid') {
+                $query->havingRaw('remaining_amount > 0');
+            }
+        }
+
+        // Filter berdasarkan rentang tanggal (payment_date dari sales_installments)
+        if ($request->filled('startDate') || $request->filled('endDate')) {
+            $query->where(function ($q) use ($request, $selectedCollectorId, $showAllCollectors) {
+                if ($request->filled('startDate') && $request->filled('endDate')) {
+                    // Jika kedua tanggal diisi, filter sales yang memiliki installment dengan payment_date dalam range
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereBetween('payment_date', [$request->startDate, $request->endDate]);
+                    });
+                } elseif ($request->filled('startDate')) {
+                    // Hanya startDate
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereDate('payment_date', '>=', $request->startDate);
+                    });
+                } elseif ($request->filled('endDate')) {
+                    // Hanya endDate
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereDate('payment_date', '<=', $request->endDate);
+                    });
+                }
+            });
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('card_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhereHas('seller', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items', function ($q) use ($search) {
+                        $q->where('product_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Sort
+        $sort = $request->input('sort', 'desc');
+        $query->orderBy('created_at', $sort);
+
+        // Pagination
+        $perPage = $request->input('perPage', 10);
+        $sales = $query->paginate($perPage)
+            ->withQueryString()
+            ->through(function ($sale) use ($selectedCollectorId, $showAllCollectors) {
+                // Jika tampilkan semua, ambil installment terakhir dari collector manapun
+                // Jika filter collector tertentu, ambil installment dari collector tersebut
+                if ($showAllCollectors) {
+                    $lastInstallment = $sale->installments
+                        ->whereNotNull('collector_id')
+                        ->sortByDesc('payment_date')
+                        ->first();
+                } else {
+                    $collectorInstallments = $sale->installments->where('collector_id', $selectedCollectorId);
+                    $lastInstallment = $collectorInstallments->sortByDesc('payment_date')->first();
+                }
+
+                return [
+                    'id' => $sale->id,
+                    'invoice' => $sale->invoice,
+                    'card_number' => $sale->card_number,
+                    'customer_name' => $sale->customer_name,
+                    'sales' => $sale->seller?->name ?? 'N/A',
+                    'product' => $sale->items->first()?->product_name ?? 'N/A',
+                    'color' => $sale->items->first()?->color ?? 'N/A',
+                    'size' => $sale->items->first()?->size ?? 'N/A',
+                    'address' => $sale->address,
+                    'subdistrict_name' => $sale->subdistrict?->name,
+                    'city_name' => $sale->city?->name,
+                    'date' => Carbon::parse($sale->transaction_at)->format('Y-m-d'),
+                    'transaction_at' => $sale->transaction_at,
+                    'price' => (float) $sale->price,
+                    'remaining' => (float) $sale->remaining_amount,
+                    'last_collected_at' => $lastInstallment ? Carbon::parse($lastInstallment->payment_date)->format('Y-m-d') : null,
+                    'last_installment_amount' => $lastInstallment ? (float) $lastInstallment->installment_amount : 0,
+                    'last_collector_name' => $lastInstallment && $lastInstallment->collector ? $lastInstallment->collector->name : null,
+                    'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
+                    'payment_type' => $sale->payment_type,
+                ];
+            });
+
+        // Get collectors list (jika user bukan collector, tampilkan semua user)
+        $collectors = User::select('id', 'name')->orderBy('name')->get();
+
+        // Get chart data (hanya jika ada collector yang dipilih, atau untuk current user jika collector)
+        $chartCollectorId = $showAllCollectors ? null : ($selectedCollectorId ?? $currentUserId);
+        $chartData = $chartCollectorId ? $this->getCollectorChartData($request, $chartCollectorId) : null;
+
+        return Inertia::render('Collector/Index', [
+            'sales' => $sales,
+            'collectors' => $collectors,
+            'currentUserId' => $currentUserId,
+            'currentUserRole' => $currentUserRole,
+            'selectedCollectorId' => $selectedCollectorId ? (int) $selectedCollectorId : null,
+            'showAllCollectors' => $showAllCollectors,
+            'chartData' => $chartData,
+            'filters' => [
+                'sort' => $request->sort ?? 'desc',
+                'status' => $request->status ?? 'all',
+                'payment_type' => $request->payment_type ?? 'all',
+                'search' => $request->search ?? '',
+                'startDate' => $request->startDate ?? '',
+                'endDate' => $request->endDate ?? '',
+                'collector_id' => $selectedCollectorId,
+            ],
+        ]);
+    }
+
+    /**
+     * Collector uncollected - belum tertagih bulan ini
+     */
+    public function collectorUncollected(Request $request)
+    {
+        $currentUser = Auth::user();
+        $currentUserId = $currentUser->id;
+        $currentUserRole = $currentUser->role ?? null;
+
+        // Jika role != collector, bisa pilih collector (default: semua)
+        // Jika role == collector, hanya tampilkan data collector tersebut
+        if ($currentUserRole === 'collector') {
+            $selectedCollectorId = $currentUserId;
+            $showAllCollectors = false;
+        } else {
+            // Jika ada filter collector_id, gunakan itu
+            // Jika tidak ada, tampilkan semua (null = semua)
+            $selectedCollectorId = $request->input('collector_id');
+            $showAllCollectors = $selectedCollectorId === null || $selectedCollectorId === 'all' || $selectedCollectorId === '';
+        }
+
+        $currentMonth = now()->format('Y-m');
+        $oneMonthAgo = now()->subMonth()->format('Y-m-d');
+
+        $query = Sales::with(['items', 'installments' => function ($q) {
+            $q->whereNotNull('collector_id')
+                ->with('collector')
+                ->orderBy('payment_date', 'desc');
+        }, 'outstanding', 'seller', 'city', 'subdistrict'])
+            ->select([
+                'sales.*',
+                DB::raw('(sales.price - COALESCE(SUM(sales_installments.installment_amount), 0)) as remaining_amount')
+            ])
+            ->leftJoin('sales_installments', 'sales.id', '=', 'sales_installments.sale_id')
+            ->groupBy('sales.id')
+            ->havingRaw('remaining_amount > 0');
+
+        // Filter belum tertagih bulan ini
+        if (!$showAllCollectors && $selectedCollectorId) {
+            // Filter untuk collector tertentu
+            $query->where(function ($q) use ($currentMonth, $oneMonthAgo, $selectedCollectorId) {
+                $q->whereDoesntHave('installments', function ($subQ) use ($currentMonth, $selectedCollectorId) {
+                    $subQ->whereRaw("DATE_FORMAT(payment_date, '%Y-%m') = ?", [$currentMonth])
+                        ->where('collector_id', $selectedCollectorId);
+                })
+                    ->orWhereHas('installments', function ($subQ) use ($oneMonthAgo, $selectedCollectorId) {
+                        $subQ->where('collector_id', $selectedCollectorId)
+                            ->whereRaw('payment_date < ?', [$oneMonthAgo])
+                            ->whereRaw('payment_date = (SELECT MAX(payment_date) FROM sales_installments WHERE sale_id = sales.id AND collector_id = ?)', [$selectedCollectorId]);
+                    });
+            });
+        } else {
+            // Filter untuk semua collector
+            $query->where(function ($q) use ($currentMonth, $oneMonthAgo) {
+                $q->whereDoesntHave('installments', function ($subQ) use ($currentMonth) {
+                    $subQ->whereRaw("DATE_FORMAT(payment_date, '%Y-%m') = ?", [$currentMonth])
+                        ->whereNotNull('collector_id');
+                })
+                    ->orWhereHas('installments', function ($subQ) use ($oneMonthAgo) {
+                        $subQ->whereNotNull('collector_id')
+                            ->whereRaw('payment_date < ?', [$oneMonthAgo])
+                            ->whereRaw('payment_date = (SELECT MAX(payment_date) FROM sales_installments WHERE sale_id = sales.id AND collector_id IS NOT NULL)');
+                    });
+            });
+        }
+
+        // Filter berdasarkan payment type
+        if ($request->filled('payment_type') && $request->payment_type !== 'all') {
+            $query->where('sales.payment_type', $request->payment_type);
+        }
+
+        // Filter berdasarkan rentang tanggal (payment_date dari sales_installments)
+        if ($request->filled('startDate') || $request->filled('endDate')) {
+            $query->where(function ($q) use ($request, $selectedCollectorId, $showAllCollectors) {
+                if ($request->filled('startDate') && $request->filled('endDate')) {
+                    // Jika kedua tanggal diisi, filter sales yang memiliki installment dengan payment_date dalam range
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereBetween('payment_date', [$request->startDate, $request->endDate]);
+                    });
+                } elseif ($request->filled('startDate')) {
+                    // Hanya startDate
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereDate('payment_date', '>=', $request->startDate);
+                    });
+                } elseif ($request->filled('endDate')) {
+                    // Hanya endDate
+                    $q->whereHas('installments', function ($subQ) use ($request, $selectedCollectorId, $showAllCollectors) {
+                        if (!$showAllCollectors && $selectedCollectorId) {
+                            $subQ->where('collector_id', $selectedCollectorId);
+                        } else {
+                            $subQ->whereNotNull('collector_id');
+                        }
+                        $subQ->whereDate('payment_date', '<=', $request->endDate);
+                    });
+                }
+            });
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('card_number', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%")
+                    ->orWhereHas('seller', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('items', function ($q) use ($search) {
+                        $q->where('product_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Sort
+        $sort = $request->input('sort', 'desc');
+        $query->orderBy('created_at', $sort);
+
+        // Pagination
+        $perPage = $request->input('perPage', 10);
+        $sales = $query->paginate($perPage)
+            ->withQueryString()
+            ->through(function ($sale) use ($selectedCollectorId, $showAllCollectors) {
+                // Jika tampilkan semua, ambil installment terakhir dari collector manapun
+                // Jika filter collector tertentu, ambil installment dari collector tersebut
+                if ($showAllCollectors) {
+                    $lastInstallment = $sale->installments
+                        ->whereNotNull('collector_id')
+                        ->sortByDesc('payment_date')
+                        ->first();
+                } else {
+                    $collectorInstallments = $sale->installments->where('collector_id', $selectedCollectorId);
+                    $lastInstallment = $collectorInstallments->sortByDesc('payment_date')->first();
+                }
+
+                return [
+                    'id' => $sale->id,
+                    'invoice' => $sale->invoice,
+                    'card_number' => $sale->card_number,
+                    'customer_name' => $sale->customer_name,
+                    'sales' => $sale->seller?->name ?? 'N/A',
+                    'product' => $sale->items->first()?->product_name ?? 'N/A',
+                    'color' => $sale->items->first()?->color ?? 'N/A',
+                    'size' => $sale->items->first()?->size ?? 'N/A',
+                    'address' => $sale->address,
+                    'subdistrict_name' => $sale->subdistrict?->name,
+                    'city_name' => $sale->city?->name,
+                    'date' => Carbon::parse($sale->transaction_at)->format('Y-m-d'),
+                    'transaction_at' => $sale->transaction_at,
+                    'price' => (float) $sale->price,
+                    'remaining' => (float) $sale->remaining_amount,
+                    'last_collected_at' => $lastInstallment ? Carbon::parse($lastInstallment->payment_date)->format('Y-m-d') : null,
+                    'last_installment_amount' => $lastInstallment ? (float) $lastInstallment->installment_amount : 0,
+                    'last_collector_name' => $lastInstallment && $lastInstallment->collector ? $lastInstallment->collector->name : null,
+                    'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
+                    'payment_type' => $sale->payment_type,
+                ];
+            });
+
+        // Get collectors list
+        $collectors = User::select('id', 'name')->orderBy('name')->get();
+
+        return Inertia::render('Collector/Uncollected', [
+            'sales' => $sales,
+            'collectors' => $collectors,
+            'currentUserId' => $currentUserId,
+            'currentUserRole' => $currentUserRole,
+            'selectedCollectorId' => $selectedCollectorId ? (int) $selectedCollectorId : null,
+            'showAllCollectors' => $showAllCollectors,
+            'filters' => [
+                'sort' => $request->sort ?? 'desc',
+                'payment_type' => $request->payment_type ?? 'all',
+                'search' => $request->search ?? '',
+                'startDate' => $request->startDate ?? '',
+                'endDate' => $request->endDate ?? '',
+                'collector_id' => $selectedCollectorId,
+            ],
+        ]);
+    }
+
+    /**
+     * Get collector chart data
+     */
+    private function getCollectorChartData(Request $request, $collectorId)
+    {
+        $allTime = $request->input('all_time', false);
+        
+        $startDate = null;
+        $endDate = null;
+
+        if (!$allTime) {
+            $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+            $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+            try {
+                $startDate = Carbon::parse($startDate)->startOfDay();
+                $endDate = Carbon::parse($endDate)->endOfDay();
+            } catch (\Exception $e) {
+                $startDate = now()->startOfMonth()->startOfDay();
+                $endDate = now()->endOfMonth()->endOfDay();
+            }
+        }
+
+        // Get monthly collection data
+        $monthlyData = $this->getCollectorMonthlyData($startDate, $endDate, $allTime, $collectorId);
+
+        // Get collection by payment type
+        $byPaymentType = $this->getCollectorByPaymentType($startDate, $endDate, $allTime, $collectorId);
+
+        return [
+            'monthlyData' => $monthlyData,
+            'byPaymentType' => $byPaymentType,
+        ];
+    }
+
+    /**
+     * Get collector monthly data
+     */
+    private function getCollectorMonthlyData($startDate, $endDate, $allTime, $collectorId)
+    {
+        $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        if ($allTime) {
+            $firstInstallment = SalesInstallment::where('collector_id', $collectorId)
+                ->orderBy('payment_date', 'asc')
+                ->first();
+            $lastInstallment = SalesInstallment::where('collector_id', $collectorId)
+                ->orderBy('payment_date', 'desc')
+                ->first();
+            
+            if (!$firstInstallment || !$lastInstallment) {
+                return [
+                    'months' => [],
+                    'values' => [],
+                ];
+            }
+
+            $startDate = Carbon::parse($firstInstallment->payment_date)->startOfMonth();
+            $endDate = Carbon::parse($lastInstallment->payment_date)->endOfMonth();
+        }
+
+        $daysDiff = $startDate->diffInDays($endDate) + 1;
+        $dates = [];
+        $dateLabels = [];
+
+        if ($daysDiff <= 31) {
+            $currentDate = $startDate->copy();
+            while ($currentDate->lte($endDate)) {
+                $dates[] = [
+                    'start' => $currentDate->copy()->startOfDay(),
+                    'end' => $currentDate->copy()->endOfDay()
+                ];
+                $day = $currentDate->format('d');
+                $monthIndex = (int) $currentDate->format('n') - 1;
+                $dateLabels[] = $day . ' ' . $monthNames[$monthIndex];
+                $currentDate->addDay();
+            }
+        } else if ($daysDiff <= 93) {
+            $currentDate = $startDate->copy();
+            while ($currentDate->lte($endDate)) {
+                $weekStart = $currentDate->copy()->startOfWeek();
+                $weekEnd = $currentDate->copy()->endOfWeek();
+                if ($weekEnd->gt($endDate)) {
+                    $weekEnd = $endDate->copy();
+                }
+                
+                $dates[] = [
+                    'start' => $weekStart,
+                    'end' => $weekEnd->copy()->endOfDay()
+                ];
+                $startDay = $weekStart->format('d');
+                $startMonthIndex = (int) $weekStart->format('n') - 1;
+                $endDay = $weekEnd->format('d');
+                $endMonthIndex = (int) $weekEnd->format('n') - 1;
+                $dateLabels[] = $startDay . ' ' . $monthNames[$startMonthIndex] . ' - ' . $endDay . ' ' . $monthNames[$endMonthIndex];
+                $currentDate->addWeek();
+            }
+        } else {
+            $currentDate = $startDate->copy()->startOfMonth();
+            while ($currentDate->lte($endDate)) {
+                $monthStart = $currentDate->copy()->startOfMonth();
+                $monthEnd = $currentDate->copy()->endOfMonth();
+                
+                if ($monthStart->lt($startDate)) {
+                    $monthStart = $startDate->copy();
+                }
+                if ($monthEnd->gt($endDate)) {
+                    $monthEnd = $endDate->copy();
+                }
+                
+                $dates[] = [
+                    'start' => $monthStart,
+                    'end' => $monthEnd->copy()->endOfDay()
+                ];
+                $monthIndex = (int) $currentDate->format('n') - 1;
+                $year = $currentDate->format('Y');
+                $dateLabels[] = $monthNames[$monthIndex] . ' ' . $year;
+                $currentDate->addMonth();
+            }
+        }
+
+        $values = [];
+        foreach ($dates as $dateRange) {
+            $total = SalesInstallment::where('collector_id', $collectorId)
+                ->whereBetween('payment_date', [$dateRange['start'], $dateRange['end']])
+                ->sum('installment_amount');
+            $values[] = (float) $total;
+        }
+
+        return [
+            'months' => $dateLabels,
+            'values' => $values,
+        ];
+    }
+
+    /**
+     * Get collector data by payment type
+     */
+    private function getCollectorByPaymentType($startDate, $endDate, $allTime, $collectorId)
+    {
+        $query = SalesInstallment::select(
+            'sales.payment_type as name',
+            DB::raw('SUM(sales_installments.installment_amount) as total')
+        )
+            ->join('sales', 'sales_installments.sale_id', '=', 'sales.id')
+            ->where('sales_installments.collector_id', $collectorId);
+
+        if (!$allTime && $startDate && $endDate) {
+            $query->whereBetween('sales_installments.payment_date', [$startDate, $endDate]);
+        }
+
+        $data = $query->groupBy('sales.payment_type')
+            ->orderByDesc('total')
+            ->get();
+
+        return [
+            'labels' => $data->pluck('name')->toArray(),
+            'values' => $data->pluck('total')->map(function ($val) {
+                return (float) $val;
+            })->toArray(),
+        ];
     }
 }

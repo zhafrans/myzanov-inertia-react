@@ -5,10 +5,16 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\LandingPageController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn() => redirect()->route('login'));
+// Landing Page Routes (Public)
+Route::get('/', [LandingPageController::class, 'home'])->name('landing.home');
+Route::get('/catalogue', [LandingPageController::class, 'catalogue'])->name('landing.catalogue');
+Route::get('/about', [LandingPageController::class, 'about'])->name('landing.about');
+Route::get('/contact', [LandingPageController::class, 'contact'])->name('landing.contact');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -43,53 +49,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index');
     Route::put('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'updateInstallment'])->name('sales.installments.update');
 
-
-    // Route::prefix('sales')->name('sales.')->group(function () {
-    //     Route::get(
-    //         '/',
-    //         fn() =>
-    //         Inertia::render('Sales/Index')
-    //     )->name('index');
-    //     Route::get(
-    //         '/{id}',
-    //         fn($id) =>
-    //         Inertia::render('Sales/Show', [
-    //             'id' => $id,
-    //         ])
-    //     )->name('show');
-
-    //     Route::post('/', fn() => back())->name('store');
-    //     Route::post('/import', fn() => back())->name('import');
-    //     Route::get('/export', fn() => back())->name('export');
-    // });
-
-    // Route::prefix('users')->name('users.')->group(function () {
-    //     Route::get(
-    //         '/',
-    //         fn() =>
-    //         Inertia::render('Users/Index')
-    //     )->name('index');
-    //     Route::get(
-    //         '/{id}',
-    //         fn($id) =>
-    //         Inertia::render('Users/Show', [
-    //             'id' => $id,
-    //         ])
-    //     )->name('show');
-    // });
-
     Route::resource('activity-logs', ActivityLogController::class)->only(['index']);
 
-    Route::prefix('catalogues')->name('catalogues.')->group(function () {
-        Route::get(
-            '/',
-            fn() =>
-            Inertia::render('Catalogue/Index')
-        )->name('index');
+    Route::resource('products', ProductController::class);
+
+    // Collector routes
+    Route::prefix('collector')->name('collector.')->group(function () {
+        Route::get('/', [SalesController::class, 'collectorIndex'])->name('index');
+        Route::get('/uncollected', [SalesController::class, 'collectorUncollected'])->name('uncollected');
+    });
+
+    // Landing Page CMS
+    Route::prefix('landing-page')->name('landing-page.')->group(function () {
+        Route::get('/', [LandingPageController::class, 'adminIndex'])->name('index');
+        Route::post('/', [LandingPageController::class, 'store'])->name('store');
+        Route::put('/{landingPageContent}', [LandingPageController::class, 'update'])->name('update');
+        Route::delete('/{landingPageContent}', [LandingPageController::class, 'destroy'])->name('destroy');
     });
 
     Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);
     Route::get('/api/dashboard/years', [DashboardController::class, 'getYearOptions']);
+    Route::get('/api/dashboard/top-card/{cardType}', [DashboardController::class, 'getTopCardData']);
 });
 
 

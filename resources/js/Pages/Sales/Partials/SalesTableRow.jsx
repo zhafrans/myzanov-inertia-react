@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Pencil, FilePlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { router } from "@inertiajs/react";
+import { toast } from "react-toastify";
 import EditSalesModal from "../EditSalesModal";
 import InputInstallmentModal from "../InputInstallmentModal";
 import {
@@ -42,6 +43,10 @@ export default function SalesTableRow({ item, collectors }) {
             preserveScroll: true,
             onSuccess: () => {
                 setOpenDelete(false);
+                toast.success("Sales berhasil dihapus!");
+            },
+            onError: () => {
+                toast.error("Gagal menghapus sales. Silakan coba lagi.");
             },
         });
     };

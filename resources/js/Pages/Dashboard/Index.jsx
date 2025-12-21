@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import axios from "axios";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { toast } from "react-toastify";
 
 export default function Dashboard() {
     const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export default function Dashboard() {
     };
 
     const [filters, setFilters] = useState(getDefaultDateRange());
-    
+
     // State untuk limit setiap top card (default 5)
     const [limits, setLimits] = useState({
         topProduct: 5,
@@ -40,6 +41,15 @@ export default function Dashboard() {
         topColor: 5,
         topCity: 5,
         topSubdistrict: 5,
+    });
+
+    // State untuk loading per card
+    const [cardLoading, setCardLoading] = useState({
+        topProduct: false,
+        topSize: false,
+        topColor: false,
+        topCity: false,
+        topSubdistrict: false,
     });
 
     const fetchDashboardData = async () => {
@@ -56,12 +66,12 @@ export default function Dashboard() {
                     params.append("end_date", filters.end_date);
             }
 
-            // Tambahkan limit untuk setiap top card
-            params.append("top_product_limit", limits.topProduct);
-            params.append("top_size_limit", limits.topSize);
-            params.append("top_color_limit", limits.topColor);
-            params.append("top_city_limit", limits.topCity);
-            params.append("top_subdistrict_limit", limits.topSubdistrict);
+            // Tambahkan limit untuk setiap top card (selalu default 5 untuk initial fetch)
+            params.append("top_product_limit", 5);
+            params.append("top_size_limit", 5);
+            params.append("top_color_limit", 5);
+            params.append("top_city_limit", 5);
+            params.append("top_subdistrict_limit", 5);
 
             const response = await axios.get(
                 `/api/dashboard/data?${params.toString()}`
@@ -134,11 +144,10 @@ export default function Dashboard() {
     useEffect(() => {
         fetchDashboardData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters, limits]);
+    }, [filters]);
 
     const handleFilterChange = (newFilters) => {
-        setFilters(newFilters);
-        // Reset limit ke default 5 saat filter berubah
+        // Reset limit ke default 5 saat filter berubah (sebelum set filters)
         setLimits({
             topProduct: 5,
             topSize: 5,
@@ -146,14 +155,75 @@ export default function Dashboard() {
             topCity: 5,
             topSubdistrict: 5,
         });
+        // Reset loading state
+        setCardLoading({
+            topProduct: false,
+            topSize: false,
+            topColor: false,
+            topCity: false,
+            topSubdistrict: false,
+        });
+        // Set filters setelah reset limit (ini akan trigger useEffect)
+        setFilters(newFilters);
     };
 
-    // Handler untuk menambah limit +5
-    const handleLoadMore = (cardType) => {
-        setLimits((prev) => ({
+    // Handler untuk menambah limit +5 dan fetch data individual
+    const handleLoadMore = async (cardType) => {
+        const newLimit = limits[cardType] + 5;
+
+        // Set loading untuk card ini saja
+        setCardLoading((prev) => ({
             ...prev,
-            [cardType]: prev[cardType] + 5,
+            [cardType]: true,
         }));
+
+        try {
+            const params = new URLSearchParams();
+            if (filters.all_time) {
+                params.append("all_time", "1");
+            } else {
+                if (filters.start_date)
+                    params.append("start_date", filters.start_date);
+                if (filters.end_date)
+                    params.append("end_date", filters.end_date);
+            }
+            params.append("limit", newLimit);
+
+            // Map cardType ke endpoint cardType
+            const cardTypeMap = {
+                topProduct: "top-product",
+                topSize: "top-size",
+                topColor: "top-color",
+                topCity: "top-city",
+                topSubdistrict: "top-subdistrict",
+            };
+
+            const response = await axios.get(
+                `/api/dashboard/top-card/${
+                    cardTypeMap[cardType]
+                }?${params.toString()}`
+            );
+
+            // Update hanya data card yang bersangkutan
+            setStats((prev) => ({
+                ...prev,
+                [cardType]: response.data,
+            }));
+
+            // Update limit
+            setLimits((prev) => ({
+                ...prev,
+                [cardType]: newLimit,
+            }));
+        } catch (err) {
+            console.error(`Error fetching ${cardType} data:`, err);
+            toast.error(`Gagal memuat data ${cardType}. Silakan coba lagi.`);
+        } finally {
+            setCardLoading((prev) => ({
+                ...prev,
+                [cardType]: false,
+            }));
+        }
     };
 
     if (loading && !stats) {
@@ -223,37 +293,37 @@ export default function Dashboard() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                        <TopProduct 
-                            data={stats.topProduct} 
-                            loading={loading} 
-                            onLoadMore={() => handleLoadMore('topProduct')}
+                        <TopProduct
+                            data={stats.topProduct}
+                            loading={cardLoading.topProduct}
+                            onLoadMore={() => handleLoadMore("topProduct")}
                             currentLimit={limits.topProduct}
                         />
-                        <TopSize 
-                            data={stats.topSize} 
-                            loading={loading} 
-                            onLoadMore={() => handleLoadMore('topSize')}
+                        <TopSize
+                            data={stats.topSize}
+                            loading={cardLoading.topSize}
+                            onLoadMore={() => handleLoadMore("topSize")}
                             currentLimit={limits.topSize}
                         />
-                        <TopColor 
-                            data={stats.topColor} 
-                            loading={loading} 
-                            onLoadMore={() => handleLoadMore('topColor')}
+                        <TopColor
+                            data={stats.topColor}
+                            loading={cardLoading.topColor}
+                            onLoadMore={() => handleLoadMore("topColor")}
                             currentLimit={limits.topColor}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                        <TopCity 
-                            data={stats.topCity} 
-                            loading={loading} 
-                            onLoadMore={() => handleLoadMore('topCity')}
+                        <TopCity
+                            data={stats.topCity}
+                            loading={cardLoading.topCity}
+                            onLoadMore={() => handleLoadMore("topCity")}
                             currentLimit={limits.topCity}
                         />
                         <TopSubdistrict
                             data={stats.topSubdistrict}
-                            loading={loading}
-                            onLoadMore={() => handleLoadMore('topSubdistrict')}
+                            loading={cardLoading.topSubdistrict}
+                            onLoadMore={() => handleLoadMore("topSubdistrict")}
                             currentLimit={limits.topSubdistrict}
                         />
                     </div>

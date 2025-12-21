@@ -562,4 +562,54 @@ class DashboardController extends Controller
 
         return response()->json($years);
     }
+
+    /**
+     * API endpoint untuk mengambil data top card individual
+     */
+    public function getTopCardData(Request $request, $cardType)
+    {
+        $allTime = $request->input('all_time', false);
+        
+        $startDate = null;
+        $endDate = null;
+
+        if (!$allTime) {
+            $startDate = $request->input('start_date', now()->startOfMonth()->format('Y-m-d'));
+            $endDate = $request->input('end_date', now()->endOfMonth()->format('Y-m-d'));
+
+            try {
+                $startDate = Carbon::parse($startDate)->startOfDay();
+                $endDate = Carbon::parse($endDate)->endOfDay();
+            } catch (\Exception $e) {
+                $startDate = now()->startOfMonth()->startOfDay();
+                $endDate = now()->endOfMonth()->endOfDay();
+            }
+        }
+
+        $limit = (int) $request->input('limit', 5);
+
+        $data = null;
+
+        switch ($cardType) {
+            case 'top-product':
+                $data = $this->getTopProductData($startDate, $endDate, $allTime, $limit);
+                break;
+            case 'top-size':
+                $data = $this->getTopSizeData($startDate, $endDate, $allTime, $limit);
+                break;
+            case 'top-color':
+                $data = $this->getTopColorData($startDate, $endDate, $allTime, $limit);
+                break;
+            case 'top-city':
+                $data = $this->getTopCityData($startDate, $endDate, $allTime, $limit);
+                break;
+            case 'top-subdistrict':
+                $data = $this->getTopSubdistrictData($startDate, $endDate, $allTime, $limit);
+                break;
+            default:
+                return response()->json(['error' => 'Invalid card type'], 400);
+        }
+
+        return response()->json($data);
+    }
 }

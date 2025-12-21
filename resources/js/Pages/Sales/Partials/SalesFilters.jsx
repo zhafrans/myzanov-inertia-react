@@ -39,7 +39,7 @@ export default function SalesFilters({ filters, setFilters }) {
                                 type="date"
                                 value={filters.startDate || ""}
                                 onChange={(e) =>
-                                    setFilters({ startDate: e.target.value })
+                                    setFilters({ ...filters, startDate: e.target.value })
                                 }
                                 className="mt-1"
                             />
@@ -53,7 +53,7 @@ export default function SalesFilters({ filters, setFilters }) {
                                 type="date"
                                 value={filters.endDate || ""}
                                 onChange={(e) =>
-                                    setFilters({ endDate: e.target.value })
+                                    setFilters({ ...filters, endDate: e.target.value })
                                 }
                                 className="mt-1"
                             />
@@ -70,7 +70,7 @@ export default function SalesFilters({ filters, setFilters }) {
                         <Select
                             value={filters.payment_type || "all"}
                             onValueChange={(v) =>
-                                setFilters({ payment_type: v })
+                                setFilters({ ...filters, payment_type: v })
                             }
                         >
                             <SelectTrigger>
@@ -94,7 +94,7 @@ export default function SalesFilters({ filters, setFilters }) {
                         </p>
                         <Select
                             value={filters.sort}
-                            onValueChange={(v) => setFilters({ sort: v })}
+                            onValueChange={(v) => setFilters({ ...filters, sort: v })}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Terbaru/Terlama" />
@@ -111,7 +111,7 @@ export default function SalesFilters({ filters, setFilters }) {
                         <p className="text-sm font-medium mb-1">Status Lunas</p>
                         <Select
                             value={filters.status}
-                            onValueChange={(v) => setFilters({ status: v })}
+                            onValueChange={(v) => setFilters({ ...filters, status: v })}
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Semua" />
@@ -136,6 +136,7 @@ export default function SalesFilters({ filters, setFilters }) {
                             checked={filters.notCollectedThisMonth || false}
                             onChange={(e) =>
                                 setFilters({
+                                    ...filters,
                                     notCollectedThisMonth: e.target.checked,
                                 })
                             }

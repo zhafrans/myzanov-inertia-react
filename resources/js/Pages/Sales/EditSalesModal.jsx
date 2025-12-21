@@ -21,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { router } from "@inertiajs/react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
     const [form, setForm] = useState({});
@@ -307,10 +308,12 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
             onSuccess: () => {
                 setOpen(false);
                 setLoading(false);
+                toast.success("Sales berhasil diupdate!");
             },
             onError: (errors) => {
                 setErrors(errors);
                 setLoading(false);
+                toast.error("Gagal mengupdate sales. Silakan periksa kembali data yang diinput.");
             },
             onFinish: () => setLoading(false),
         });

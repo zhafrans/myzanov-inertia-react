@@ -17,11 +17,7 @@ import { router, usePage } from "@inertiajs/react";
 import CreateModal from "../CreateModal";
 
 export default function SalesTable() {
-    const {
-        sales,
-        filters: initialFilters,
-        collectors,
-    } = usePage().props;
+    const { sales, filters: initialFilters, collectors } = usePage().props;
 
     const [filters, setFilters] = useState({
         sort: initialFilters.sort || "desc",

@@ -1,88 +1,65 @@
-import { useForm } from "@inertiajs/react"
+import { useForm } from "@inertiajs/react";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { useEffect, useState } from "react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
-export default function EditCatalogueModal({ open, setOpen, data }) {
-    const [previewImage, setPreviewImage] = useState(null)
-    const { data: formData, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        category: '',
-        gender: '',
-        material: '',
-        cash_price: '',
-        credit_price: '',
+export default function CreateCatalogueModal({ open, setOpen }) {
+    const [previewImage, setPreviewImage] = useState(null);
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: "",
+        category: "",
+        gender: "",
+        material: "",
+        cash_price: "",
+        credit_price: "",
         image: null,
-        _method: 'PUT',
-    })
-
-    // sync ketika modal dibuka / data berubah
-    useEffect(() => {
-        if (open && data) {
-            setData({
-                name: data.name ?? '',
-                category: data.category ?? '',
-                gender: data.gender ?? '',
-                material: data.material ?? '',
-                cash_price: data.cash_price ?? data.cashPrice ?? '',
-                credit_price: data.credit_price ?? data.creditPrice ?? '',
-                image: null,
-                _method: 'PUT',
-            })
-            // Set preview from existing image
-            if (data.image_url || data.image) {
-                setPreviewImage(data.image_url || (data.image?.startsWith('http') ? data.image : `/storage/${data.image}`))
-            } else {
-                setPreviewImage(null)
-            }
-        }
-    }, [open, data, setData])
+    });
 
     const handleSubmit = (e) => {
-        e.preventDefault()
-        post(route('products.update', data.id), {
+        e.preventDefault();
+        post(route("products.store"), {
             onSuccess: () => {
-                reset()
-                setPreviewImage(null)
-                setOpen(false)
+                reset();
+                setPreviewImage(null);
+                setOpen(false);
             },
             preserveScroll: true,
             forceFormData: true,
-        })
-    }
+        });
+    };
 
     const handleClose = () => {
-        reset()
-        setPreviewImage(null)
-        setOpen(false)
-    }
+        reset();
+        setPreviewImage(null);
+        setOpen(false);
+    };
 
     const handleImageChange = (e) => {
-        const file = e.target.files[0]
+        const file = e.target.files[0];
         if (file) {
-            setData("image", file)
+            setData("image", file);
             // Create preview
-            const reader = new FileReader()
+            const reader = new FileReader();
             reader.onloadend = () => {
-                setPreviewImage(reader.result)
-            }
-            reader.readAsDataURL(file)
+                setPreviewImage(reader.result);
+            };
+            reader.readAsDataURL(file);
         }
-    }
+    };
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Edit Produk</DialogTitle>
+                    <DialogTitle>Tambah Produk Baru</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -91,11 +68,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Label>Nama Produk *</Label>
                             <Input
                                 name="name"
-                                value={formData.name}
-                                onChange={(e) => setData('name', e.target.value)}
+                                value={data.name}
+                                onChange={(e) =>
+                                    setData("name", e.target.value)
+                                }
+                                placeholder="Masukkan nama produk"
                             />
                             {errors.name && (
-                                <p className="text-sm text-destructive">{errors.name}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.name}
+                                </p>
                             )}
                         </div>
 
@@ -103,11 +85,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Label>Kategori</Label>
                             <Input
                                 name="category"
-                                value={formData.category}
-                                onChange={(e) => setData('category', e.target.value)}
+                                value={data.category}
+                                onChange={(e) =>
+                                    setData("category", e.target.value)
+                                }
+                                placeholder="Masukkan kategori"
                             />
                             {errors.category && (
-                                <p className="text-sm text-destructive">{errors.category}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.category}
+                                </p>
                             )}
                         </div>
 
@@ -115,11 +102,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Label>Gender</Label>
                             <Input
                                 name="gender"
-                                value={formData.gender}
-                                onChange={(e) => setData('gender', e.target.value)}
+                                value={data.gender}
+                                onChange={(e) =>
+                                    setData("gender", e.target.value)
+                                }
+                                placeholder="Pria / Wanita"
                             />
                             {errors.gender && (
-                                <p className="text-sm text-destructive">{errors.gender}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.gender}
+                                </p>
                             )}
                         </div>
 
@@ -127,11 +119,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Label>Bahan</Label>
                             <Input
                                 name="material"
-                                value={formData.material}
-                                onChange={(e) => setData('material', e.target.value)}
+                                value={data.material}
+                                onChange={(e) =>
+                                    setData("material", e.target.value)
+                                }
+                                placeholder="Masukkan bahan"
                             />
                             {errors.material && (
-                                <p className="text-sm text-destructive">{errors.material}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.material}
+                                </p>
                             )}
                         </div>
 
@@ -140,11 +137,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Input
                                 type="number"
                                 name="cash_price"
-                                value={formData.cash_price}
-                                onChange={(e) => setData('cash_price', e.target.value)}
+                                value={data.cash_price}
+                                onChange={(e) =>
+                                    setData("cash_price", e.target.value)
+                                }
+                                placeholder="0"
                             />
                             {errors.cash_price && (
-                                <p className="text-sm text-destructive">{errors.cash_price}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.cash_price}
+                                </p>
                             )}
                         </div>
 
@@ -153,11 +155,16 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             <Input
                                 type="number"
                                 name="credit_price"
-                                value={formData.credit_price}
-                                onChange={(e) => setData('credit_price', e.target.value)}
+                                value={data.credit_price}
+                                onChange={(e) =>
+                                    setData("credit_price", e.target.value)
+                                }
+                                placeholder="0"
                             />
                             {errors.credit_price && (
-                                <p className="text-sm text-destructive">{errors.credit_price}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.credit_price}
+                                </p>
                             )}
                         </div>
 
@@ -169,10 +176,12 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                                 onChange={handleImageChange}
                             />
                             {errors.image && (
-                                <p className="text-sm text-destructive">{errors.image}</p>
+                                <p className="text-sm text-destructive">
+                                    {errors.image}
+                                </p>
                             )}
                             <p className="text-xs text-muted-foreground">
-                                Format: JPG, PNG, GIF, WEBP (Max: 2MB). Kosongkan jika tidak ingin mengubah gambar.
+                                Format: JPG, PNG, GIF, WEBP (Max: 2MB)
                             </p>
                         </div>
 
@@ -200,11 +209,11 @@ export default function EditCatalogueModal({ open, setOpen, data }) {
                             Batal
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Menyimpan...' : 'Simpan'}
+                            {processing ? "Menyimpan..." : "Simpan"}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
-    )
+    );
 }

@@ -4,109 +4,74 @@ import {
     TableRow,
     TableHead,
     TableBody,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
-import { useEffect, useMemo, useState } from "react"
-import CatalogueFilters from "./CatalogueFilters"
-import CataloguePagination from "./CataloguePagination"
-import CatalogueTableRow from "./CatalogueTableRow"
-
-const dummyData = [
-    {
-        id: 1,
-        name: "Sepatu A",
-        category: "Sepatu",
-        gender: "Pria",
-        material: "Kulit",
-        cashPrice: 350000,
-        creditPrice: 400000,
-        image: "https://via.placeholder.com/80",
-    },
-    {
-        id: 2,
-        name: "Sepatu B",
-        category: "Sneakers",
-        gender: "Wanita",
-        material: "Canvas",
-        cashPrice: 300000,
-        creditPrice: 360000,
-        image: "https://via.placeholder.com/80",
-    },
-]
-
-
-const PER_PAGE = 1
+    TableCell,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { router, usePage } from "@inertiajs/react";
+import CataloguePagination from "./CataloguePagination";
+import CatalogueTableRow from "./CatalogueTableRow";
 
 export default function CatalogueTable() {
-    const [filters, setFilters] = useState({
-        size: "all",
-        sort: "desc",
-    })
-
-    const [search, setSearch] = useState("")
-    const [debouncedSearch, setDebouncedSearch] = useState("")
-    const [page, setPage] = useState(1)
+    const { products, filters } = usePage().props;
+    const [search, setSearch] = useState(filters?.search || "");
+    const [debouncedSearch, setDebouncedSearch] = useState(
+        filters?.search || ""
+    );
+    const [isInitialMount, setIsInitialMount] = useState(true);
 
     // DEBOUNCE SEARCH
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearch(search)
-            setPage(1)
-        }, 300)
+            setDebouncedSearch(search);
+        }, 300);
 
-        return () => clearTimeout(timer)
-    }, [search])
+        return () => clearTimeout(timer);
+    }, [search]);
 
-    // FILTER + SEARCH + SORT
-    const filteredData = useMemo(() => {
-        let data = [...dummyData]
-
-        if (debouncedSearch) {
-            const keyword = debouncedSearch.toLowerCase()
-            data = data.filter(item =>
-                item.cardNo.toLowerCase().includes(keyword) ||
-                item.sales.toLowerCase().includes(keyword) ||
-                item.product.toLowerCase().includes(keyword)
-            )
+    // Handle search with Inertia
+    useEffect(() => {
+        // Skip on initial mount to avoid unnecessary request
+        if (isInitialMount) {
+            setIsInitialMount(false);
+            return;
         }
 
-        if (filters.size !== "all") {
-            data = data.filter(item => item.size === filters.size)
-        }
-
-        data.sort((a, b) => {
-            const dateA = new Date(a.date)
-            const dateB = new Date(b.date)
-            return filters.sort === "asc"
-                ? dateA - dateB
-                : dateB - dateA
-        })
-
-        return data
-    }, [filters, debouncedSearch])
-
-    // PAGINATION
-    const total = filteredData.length
-    const paginatedData = useMemo(() => {
-        const start = (page - 1) * PER_PAGE
-        return filteredData.slice(start, start + PER_PAGE)
-    }, [filteredData, page])
+        router.get(
+            route("products.index"),
+            { search: debouncedSearch || undefined },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            }
+        );
+    }, [debouncedSearch]);
 
     return (
         <div className="space-y-4">
             {/* TOOLBAR */}
             <div className="flex flex-wrap gap-3 justify-between">
                 <Input
-                    placeholder="Cari card no / sales / produk..."
+                    placeholder="Cari nama / kategori / bahan..."
                     value={search}
-                    onChange={e => setSearch(e.target.value)}
+                    onChange={(e) => setSearch(e.target.value)}
                     className="max-w-xs"
                 />
 
-                <CatalogueFilters
-                    filters={filters}
-                    setFilters={setFilters}
-                />
+                <Button
+                    onClick={() => {
+                        window.dispatchEvent(
+                            new CustomEvent("openCreateModal")
+                        );
+                    }}
+                    className="gap-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Tambah Produk
+                </Button>
             </div>
 
             {/* TABLE */}
@@ -126,20 +91,30 @@ export default function CatalogueTable() {
                     </TableHeader>
 
                     <TableBody>
-                        {paginatedData.map(item => (
-                            <CatalogueTableRow key={item.id} item={item} />
-                        ))}
+                        {products &&
+                        products.data &&
+                        products.data.length > 0 ? (
+                            products.data.map((item) => (
+                                <CatalogueTableRow key={item.id} item={item} />
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell
+                                    colSpan={8}
+                                    className="text-center py-8 text-muted-foreground"
+                                >
+                                    Tidak ada data produk
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </div>
 
             {/* PAGINATION */}
-            <CataloguePagination
-                page={page}
-                setPage={setPage}
-                total={total}
-                perPage={PER_PAGE}
-            />
+            {products && products.links && (
+                <CataloguePagination links={products.links} />
+            )}
         </div>
-    )
+    );
 }

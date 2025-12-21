@@ -23,6 +23,7 @@ import { useState, useEffect } from "react";
 import { router, usePage } from "@inertiajs/react";
 import { Plus, Trash2 } from "lucide-react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function CreateModal() {
     const { auth } = usePage().props;
@@ -356,10 +357,14 @@ export default function CreateModal() {
                 setLoading(false);
                 // Reset form to defaults
                 resetForm();
+                toast.success("Sales berhasil ditambahkan!");
             },
             onError: (errors) => {
                 setErrors(errors);
                 setLoading(false);
+                toast.error(
+                    "Gagal menambahkan sales. Silakan periksa kembali data yang diinput."
+                );
             },
             onFinish: () => setLoading(false),
         });
