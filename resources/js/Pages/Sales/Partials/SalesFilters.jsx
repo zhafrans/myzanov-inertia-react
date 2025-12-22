@@ -18,76 +18,93 @@ import { CalendarIcon, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { useState, useEffect } from "react";
+import LocationFilters from "./LocationFilters";
 
 export default function SalesFilters({ filters, setFilters }) {
-    const [dateRange, setDateRange] = useState(() => {
-        if (filters.startDate && filters.endDate) {
-            return {
-                from: new Date(filters.startDate),
-                to: new Date(filters.endDate),
-            };
-        }
-        return { from: null, to: null };
-    });
-    const [isAllTime, setIsAllTime] = useState(filters.all_time || false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [localFilters, setLocalFilters] = useState(filters);
 
+    // UI states for Date Picker
+    const [dateRange, setDateRange] = useState({ from: null, to: null });
+    const [isAllTime, setIsAllTime] = useState(false);
+
+    // Sync localFilters with prop filters when Popover opens
     useEffect(() => {
-        if (filters.startDate && filters.endDate && !filters.all_time) {
+        if (isOpen) {
+            setLocalFilters(filters);
+        }
+    }, [isOpen, filters]);
+
+    // Sync UI states (dateRange, isAllTime) with localFilters
+    useEffect(() => {
+        if (
+            localFilters.startDate &&
+            localFilters.endDate &&
+            !localFilters.all_time
+        ) {
             setDateRange({
-                from: new Date(filters.startDate),
-                to: new Date(filters.endDate),
+                from: new Date(localFilters.startDate),
+                to: new Date(localFilters.endDate),
             });
             setIsAllTime(false);
-        } else if (filters.all_time) {
+        } else if (localFilters.all_time) {
             setIsAllTime(true);
+            setDateRange({ from: null, to: null });
+        } else {
+            setDateRange({ from: null, to: null });
+            setIsAllTime(false);
         }
-    }, [filters.startDate, filters.endDate, filters.all_time]);
+    }, [localFilters.startDate, localFilters.endDate, localFilters.all_time]);
 
     const handleDateRangeChange = (range) => {
         setDateRange(range);
         if (range?.from && range?.to) {
-            setIsAllTime(false);
-            setFilters({
-                ...filters,
+            setLocalFilters((prev) => ({
+                ...prev,
                 startDate: format(range.from, "yyyy-MM-dd"),
                 endDate: format(range.to, "yyyy-MM-dd"),
                 all_time: false,
-            });
+            }));
         }
     };
 
     const handleAllTime = () => {
-        setIsAllTime(true);
-        setDateRange({ from: null, to: null });
-        setFilters({
-            ...filters,
+        setLocalFilters((prev) => ({
+            ...prev,
             startDate: "",
             endDate: "",
             all_time: true,
-        });
+        }));
     };
 
     const handleResetDate = () => {
-        setIsAllTime(false);
-        setDateRange({ from: null, to: null });
-        setFilters({
-            ...filters,
+        setLocalFilters((prev) => ({
+            ...prev,
             startDate: "",
             endDate: "",
             all_time: false,
-        });
+        }));
+    };
+
+    const handleApply = () => {
+        setFilters(localFilters);
+        setIsOpen(false);
     };
 
     return (
-        <Popover>
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full md:w-auto text-xs md:text-sm">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full md:w-auto text-xs md:text-sm"
+                >
                     <Filter className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Filter
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-80 space-y-4">
+            <PopoverContent className="w-80 space-y-4 max-h-[80vh] overflow-y-auto">
                 {/* Date Range Filter */}
                 <div className="space-y-3">
                     <p className="text-sm font-semibold">Rentang Tanggal</p>
@@ -103,13 +120,21 @@ export default function SalesFilters({ filters, setFilters }) {
                                 ) : dateRange?.from ? (
                                     dateRange.to ? (
                                         <>
-                                            {format(dateRange.from, "dd MMM yyyy", {
-                                                locale: id,
-                                            })}{" "}
+                                            {format(
+                                                dateRange.from,
+                                                "dd MMM yyyy",
+                                                {
+                                                    locale: id,
+                                                }
+                                            )}{" "}
                                             -{" "}
-                                            {format(dateRange.to, "dd MMM yyyy", {
-                                                locale: id,
-                                            })}
+                                            {format(
+                                                dateRange.to,
+                                                "dd MMM yyyy",
+                                                {
+                                                    locale: id,
+                                                }
+                                            )}
                                         </>
                                     ) : (
                                         format(dateRange.from, "dd MMM yyyy", {
@@ -159,9 +184,12 @@ export default function SalesFilters({ filters, setFilters }) {
                             Tipe Pembayaran
                         </p>
                         <Select
-                            value={filters.payment_type || "all"}
+                            value={localFilters.payment_type || "all"}
                             onValueChange={(v) =>
-                                setFilters({ ...filters, payment_type: v })
+                                setLocalFilters((prev) => ({
+                                    ...prev,
+                                    payment_type: v,
+                                }))
                             }
                         >
                             <SelectTrigger>
@@ -184,8 +212,13 @@ export default function SalesFilters({ filters, setFilters }) {
                             Tanggal Pengambilan
                         </p>
                         <Select
-                            value={filters.sort}
-                            onValueChange={(v) => setFilters({ ...filters, sort: v })}
+                            value={localFilters.sort}
+                            onValueChange={(v) =>
+                                setLocalFilters((prev) => ({
+                                    ...prev,
+                                    sort: v,
+                                }))
+                            }
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Terbaru/Terlama" />
@@ -201,8 +234,13 @@ export default function SalesFilters({ filters, setFilters }) {
                     <div>
                         <p className="text-sm font-medium mb-1">Status Lunas</p>
                         <Select
-                            value={filters.status}
-                            onValueChange={(v) => setFilters({ ...filters, status: v })}
+                            value={localFilters.status}
+                            onValueChange={(v) =>
+                                setLocalFilters((prev) => ({
+                                    ...prev,
+                                    status: v,
+                                }))
+                            }
                         >
                             <SelectTrigger>
                                 <SelectValue placeholder="Semua" />
@@ -224,12 +262,14 @@ export default function SalesFilters({ filters, setFilters }) {
                         <input
                             type="checkbox"
                             id="notCollectedThisMonth"
-                            checked={filters.notCollectedThisMonth || false}
+                            checked={
+                                localFilters.notCollectedThisMonth || false
+                            }
                             onChange={(e) =>
-                                setFilters({
-                                    ...filters,
+                                setLocalFilters((prev) => ({
+                                    ...prev,
                                     notCollectedThisMonth: e.target.checked,
-                                })
+                                }))
                             }
                             className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-2 focus:ring-primary"
                         />
@@ -239,6 +279,17 @@ export default function SalesFilters({ filters, setFilters }) {
                         >
                             Belum Tertagih Bulan Ini
                         </label>
+                    </div>
+                    <LocationFilters
+                        filters={localFilters}
+                        setFilters={setLocalFilters}
+                    />
+
+                    {/* Apply Button */}
+                    <div className="pt-4 border-t mt-4 sticky bottom-0 bg-background pb-2">
+                        <Button className="w-full" onClick={handleApply}>
+                            Terapkan Filter
+                        </Button>
                     </div>
                 </div>
             </PopoverContent>

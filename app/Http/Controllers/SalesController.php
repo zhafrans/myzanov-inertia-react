@@ -38,6 +38,20 @@ class SalesController extends Controller
             $query->where('sales.payment_type', $request->payment_type);
         }
 
+        // Filter berdasarkan lokasi
+        if ($request->filled('province_id')) {
+            $query->where('sales.province_id', $request->province_id);
+        }
+        if ($request->filled('city_id')) {
+            $query->where('sales.city_id', $request->city_id);
+        }
+        if ($request->filled('subdistrict_id')) {
+            $query->where('sales.subdistrict_id', $request->subdistrict_id);
+        }
+        if ($request->filled('village_id')) {
+            $query->where('sales.village_id', $request->village_id);
+        }
+
         // Filter berdasarkan status lunas
         if ($request->filled('status') && $request->status !== 'all') {
             if ($request->status === 'paid') {
@@ -181,6 +195,10 @@ class SalesController extends Controller
                 'search' => $request->search ?? '',
                 'startDate' => $request->startDate ?? '',
                 'endDate' => $request->endDate ?? '',
+                'province_id' => $request->province_id ?? '',
+                'city_id' => $request->city_id ?? '',
+                'subdistrict_id' => $request->subdistrict_id ?? '',
+                'village_id' => $request->village_id ?? '',
             ],
             'collectors' => $collectors,
         ]);
@@ -998,6 +1016,20 @@ class SalesController extends Controller
             $query->where('sales.payment_type', $request->payment_type);
         }
 
+        // Filter berdasarkan lokasi
+        if ($request->filled('province_id')) {
+            $query->where('sales.province_id', $request->province_id);
+        }
+        if ($request->filled('city_id')) {
+            $query->where('sales.city_id', $request->city_id);
+        }
+        if ($request->filled('subdistrict_id')) {
+            $query->where('sales.subdistrict_id', $request->subdistrict_id);
+        }
+        if ($request->filled('village_id')) {
+            $query->where('sales.village_id', $request->village_id);
+        }
+
         // Filter berdasarkan status lunas (berdasarkan remaining_amount dari sales)
         if ($request->filled('status') && $request->status !== 'all') {
             if ($request->status === 'paid') {
@@ -1132,6 +1164,10 @@ class SalesController extends Controller
                 'endDate' => $request->endDate ?? now()->endOfMonth()->format('Y-m-d'),
                 'all_time' => $request->boolean('all_time', false),
                 'collector_id' => $selectedCollectorId,
+                'province_id' => $request->province_id ?? '',
+                'city_id' => $request->city_id ?? '',
+                'subdistrict_id' => $request->subdistrict_id ?? '',
+                'village_id' => $request->village_id ?? '',
             ],
         ]);
     }
@@ -1340,6 +1376,10 @@ class SalesController extends Controller
                 'startDate' => $request->startDate ?? '',
                 'endDate' => $request->endDate ?? '',
                 'collector_id' => $selectedCollectorId,
+                'province_id' => $request->province_id ?? '',
+                'city_id' => $request->city_id ?? '',
+                'subdistrict_id' => $request->subdistrict_id ?? '',
+                'village_id' => $request->village_id ?? '',
             ],
         ]);
     }

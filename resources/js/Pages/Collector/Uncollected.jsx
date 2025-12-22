@@ -37,6 +37,10 @@ export default function CollectorUncollected() {
         payment_type: initialFilters.payment_type || "all",
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
+        province_id: initialFilters.province_id || "",
+        city_id: initialFilters.city_id || "",
+        subdistrict_id: initialFilters.subdistrict_id || "",
+        village_id: initialFilters.village_id || "",
         collector_id: showAllCollectors
             ? "all"
             : selectedCollectorId?.toString() || "all",

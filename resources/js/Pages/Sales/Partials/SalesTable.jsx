@@ -150,7 +150,8 @@ function SalesMobileCard({ item, collectors }) {
                                         : "text-green-600"
                                 }`}
                             >
-                                Rp {item.remaining?.toLocaleString("id-ID") || "0"}
+                                Rp{" "}
+                                {item.remaining?.toLocaleString("id-ID") || "0"}
                             </p>
                         </div>
                     </div>
@@ -244,6 +245,10 @@ export default function SalesTable() {
         notCollectedThisMonth: initialFilters.notCollectedThisMonth || false,
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
+        province_id: initialFilters.province_id || "",
+        city_id: initialFilters.city_id || "",
+        subdistrict_id: initialFilters.subdistrict_id || "",
+        village_id: initialFilters.village_id || "",
     });
 
     const [search, setSearch] = useState(initialFilters.search || "");
