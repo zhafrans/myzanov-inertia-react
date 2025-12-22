@@ -162,7 +162,7 @@ export default function EditInstallmentModal({ open, setOpen, saleId, installmen
                             className={errors.installment_amount ? "border-red-500 focus-visible:ring-red-500" : ""}
                             min="0"
                             max={availableAmount || undefined}
-                            step="1000"
+                            // step="1000"
                         />
                         {errors.installment_amount && (
                             <p className="text-sm text-red-500">{errors.installment_amount}</p>

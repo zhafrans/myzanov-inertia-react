@@ -159,6 +159,47 @@ function SalesMobileCard({ item, collectors }) {
                             </p>
                         </div>
                     </div>
+                    {/* Terakhir Ditagih */}
+                    <div className="mb-2">
+                        <p className="text-xs text-muted-foreground mb-0.5">
+                            Terakhir Ditagih
+                        </p>
+                        <div className="text-xs">
+                            {item.last_installment_is_dp ? (
+                                <div className="flex flex-col">
+                                    <span className="font-medium text-blue-600">
+                                        DP: Rp {item.last_installment_amount.toLocaleString("id-ID")}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                        {item.last_collected_at ? formatDate(item.last_collected_at) : ''}
+                                        {item.last_collector_name && (
+                                            <span className="ml-1">
+                                                - {item.last_collector_name}
+                                            </span>
+                                        )}
+                                    </span>
+                                </div>
+                            ) : item.last_collected_at ? (
+                                <div className="flex flex-col">
+                                    <span className="font-medium">
+                                        {formatDate(item.last_collected_at)}
+                                        {item.last_collector_name && (
+                                            <span className="ml-2 text-xs font-normal text-muted-foreground">
+                                                - {item.last_collector_name}
+                                            </span>
+                                        )}
+                                    </span>
+                                    {item.last_installment_amount > 0 && (
+                                        <span className="text-muted-foreground">
+                                            Rp {item.last_installment_amount.toLocaleString("id-ID")}
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <span className="text-muted-foreground">-</span>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
                 {/* Actions */}

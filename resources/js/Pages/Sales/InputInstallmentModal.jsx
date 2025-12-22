@@ -188,7 +188,7 @@ export default function InputInstallmentModal({
                             }
                             min="0"
                             max={remainingAmount || undefined}
-                            step="1000"
+                            // step="1000"
                         />
                         {errors.installment_amount && (
                             <p className="text-sm text-red-500">
