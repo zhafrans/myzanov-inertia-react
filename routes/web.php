@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\LandingPageController;
+use App\Enums\UserRole;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -28,50 +29,93 @@ Route::middleware('auth')->group(function () {
         '/dashboard',
         fn() =>
         Inertia::render('Dashboard/Index')
+    )->name('dashboard.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    // User Management - Only Super Admin and Admin
+    Route::get('/users', [UserController::class, 'index'])
+    ->name('users.index')
+    ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    // STORE (Admin + SuperAdmin)
+    Route::post('/users', [UserController::class, 'store'])
+        ->name('users.store')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    // UPDATE (Admin + SuperAdmin)
+    Route::put('/users/{id}', [UserController::class, 'update'])
+        ->name('users.update')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    // DELETE (Admin + SuperAdmin)
+    Route::delete('/users/{id}', [UserController::class, 'destroy'])
+        ->name('users.destroy')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    Route::get('/users/{user}', [UserController::class, 'show'])
+    ->name('users.show')
+    ->middleware(
+        'role:' 
+        . UserRole::SuperAdmin->value . ',' 
+        . UserRole::Admin->value . ',' 
+        . UserRole::Sales->value . ',' 
+        . UserRole::Collector->value . ',' 
+        . UserRole::Driver->value
     );
 
-    Route::resource('users', UserController::class);
-
-    Route::get('/sales', [SalesController::class, 'index'])->name('sales.index');
-    Route::get('/sales/create', [SalesController::class, 'create'])->name('sales.create');
+    // Sales Routes
+    Route::get('/sales', [SalesController::class, 'index'])->name('sales.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
+    Route::get('/sales/create', [SalesController::class, 'create'])->name('sales.create')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
     // Export route - must be before {id} routes
-    Route::get('/sales/export', [SalesController::class, 'export'])->name('sales.export');
+    Route::get('/sales/export', [SalesController::class, 'export'])->name('sales.export')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
-    Route::post('/sales', [SalesController::class, 'store'])->name('sales.store');
-    Route::get('/sales/{id}', [SalesController::class, 'show'])->name('sales.show');
-    Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit');
-    Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update');
-    Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy');
+    Route::post('/sales', [SalesController::class, 'store'])->name('sales.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    Route::get('/sales/{id}', [SalesController::class, 'show'])->name('sales.show')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
+    Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit')->middleware('role:' . UserRole::SuperAdmin->value);
+    Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update')->middleware('role:' . UserRole::SuperAdmin->value);
+    Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy')->middleware('role:' . UserRole::SuperAdmin->value);
 
     // Installment routes
-    Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store');
-    Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index');
-    Route::put('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'updateInstallment'])->name('sales.installments.update');
+    Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
+    Route::put('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'updateInstallment'])->name('sales.installments.update')->middleware('role:' . UserRole::SuperAdmin->value);
 
-    Route::resource('activity-logs', ActivityLogController::class)->only(['index']);
+    // Activity Logs - Only Super Admin
+    Route::resource('activity-logs', ActivityLogController::class)
+        ->only(['index'])
+        ->middleware('role:' . UserRole::SuperAdmin->value);
 
-    Route::resource('products', ProductController::class);
+    // Product Management - Admin, Super Admin, and potentially Sales
+    Route::resource('products', ProductController::class)
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
-    // Collector routes
-    Route::prefix('collector')->name('collector.')->group(function () {
-        Route::get('/', [SalesController::class, 'collectorIndex'])->name('index');
-        Route::get('/uncollected', [SalesController::class, 'collectorUncollected'])->name('uncollected');
+    // Collector routes - Only Collector
+    Route::prefix('collector')
+        ->name('collector.')
+        ->middleware('role:' . UserRole::Collector->value . ',' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value)
+        ->group(function () {
+            Route::get('/', [SalesController::class, 'collectorIndex'])->name('index');
+            Route::get('/uncollected', [SalesController::class, 'collectorUncollected'])->name('uncollected');
+        });
+
+    // Landing Page CMS - Admin and Super Admin
+    Route::prefix('landing-page')
+        ->name('landing-page.')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value)
+        ->group(function () {
+            Route::get('/', [LandingPageController::class, 'adminIndex'])->name('index');
+            Route::post('/', [LandingPageController::class, 'store'])->name('store');
+            Route::put('/{landingPageContent}', [LandingPageController::class, 'update'])->name('update');
+            Route::delete('/{landingPageContent}', [LandingPageController::class, 'destroy'])->name('destroy');
+        });
+
+   Route::middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value)
+    ->group(function () {
+        Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);
+        Route::get('/api/dashboard/years', [DashboardController::class, 'getYearOptions']);
+        Route::get('/api/dashboard/top-card/{cardType}', [DashboardController::class, 'getTopCardData']);
     });
-
-    // Landing Page CMS
-    Route::prefix('landing-page')->name('landing-page.')->group(function () {
-        Route::get('/', [LandingPageController::class, 'adminIndex'])->name('index');
-        Route::post('/', [LandingPageController::class, 'store'])->name('store');
-        Route::put('/{landingPageContent}', [LandingPageController::class, 'update'])->name('update');
-        Route::delete('/{landingPageContent}', [LandingPageController::class, 'destroy'])->name('destroy');
-    });
-
-    Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);
-    Route::get('/api/dashboard/years', [DashboardController::class, 'getYearOptions']);
-    Route::get('/api/dashboard/top-card/{cardType}', [DashboardController::class, 'getTopCardData']);
 });
-
 
 Route::prefix('locations')->name('locations.')->group(function () {
     Route::get('/provinces', [SalesController::class, 'getProvinces'])->name('provinces');
@@ -83,3 +127,4 @@ Route::prefix('locations')->name('locations.')->group(function () {
 Route::prefix('api')->name('api.')->group(function () {
     Route::get('/users', [SalesController::class, 'getUsers'])->name('users');
 });
+

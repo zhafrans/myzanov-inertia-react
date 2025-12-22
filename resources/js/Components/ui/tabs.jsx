@@ -8,7 +8,11 @@ const Tabs = React.forwardRef(({ className, defaultValue, children, ...props }, 
         <div className={cn("w-full", className)} ref={ref} {...props}>
             {React.Children.map(children, (child) => {
                 if (React.isValidElement(child)) {
-                    return React.cloneElement(child, { activeTab, setActiveTab })
+                    // Only pass activeTab and setActiveTab to direct children that are Tab components
+                    if (child.type === TabsList || child.type === TabsContent) {
+                        return React.cloneElement(child, { activeTab, setActiveTab })
+                    }
+                    return child
                 }
                 return child
             })}
@@ -29,7 +33,11 @@ const TabsList = React.forwardRef(({ className, activeTab, setActiveTab, childre
         >
             {React.Children.map(children, (child) => {
                 if (React.isValidElement(child)) {
-                    return React.cloneElement(child, { activeTab, setActiveTab })
+                    // Only pass activeTab and setActiveTab to TabsTrigger components
+                    if (child.type === TabsTrigger) {
+                        return React.cloneElement(child, { activeTab, setActiveTab })
+                    }
+                    return child
                 }
                 return child
             })}

@@ -94,7 +94,7 @@ class DashboardController extends Controller
     /**
      * Get monthly sales data per seller berdasarkan date range
      */
-    private function getMonthlySalesData($startDate, $endDate, $allTime = false)
+    private function getMonthlySalesData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
         // Ambil semua seller yang aktif
         $sellers = User::whereHas('sales')->get();
@@ -196,10 +196,21 @@ class DashboardController extends Controller
             $data = [];
 
             foreach ($dates as $dateRange) {
-                $count = Sales::where('seller_id', $seller->id)
-                    ->whereBetween('transaction_at', [$dateRange['start'], $dateRange['end']])
-                    ->count();
+                $query = Sales::where('seller_id', $seller->id)
+                    ->whereBetween('transaction_at', [$dateRange['start'], $dateRange['end']]);
+                
+                // Apply payment status filter if specified
+                if ($paymentStatus === 'paid') {
+                    $query->whereHas('outstanding', function ($q) {
+                        $q->where('outstanding_amount', '<=', 0);
+                    });
+                } elseif ($paymentStatus === 'unpaid') {
+                    $query->whereHas('outstanding', function ($q) {
+                        $q->where('outstanding_amount', '>', 0);
+                    });
+                }
 
+                $count = $query->count();
                 $data[] = $count;
             }
 
@@ -218,7 +229,7 @@ class DashboardController extends Controller
     /**
      * Get sales data by user (for pie chart)
      */
-    private function getSalesByUserData($startDate, $endDate, $allTime = false)
+    private function getSalesByUserData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
         $query = Sales::select(
             'users.name',
@@ -228,6 +239,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $salesByUser = $query->groupBy('users.id', 'users.name')
@@ -243,7 +265,7 @@ class DashboardController extends Controller
     /**
      * Get sales data by payment type (for pie chart)
      */
-    private function getSalesByPaymentTypeData($startDate, $endDate, $allTime = false)
+    private function getSalesByPaymentTypeData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
         $query = Sales::select(
             'sales.payment_type as name',
@@ -252,6 +274,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $salesByPaymentType = $query->groupBy('sales.payment_type')
@@ -267,7 +300,7 @@ class DashboardController extends Controller
     /**
      * Get sales data by status (for pie chart)
      */
-    private function getSalesByStatusData($startDate, $endDate, $allTime = false)
+    private function getSalesByStatusData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
         $query = Sales::select(
             'sales.status as name',
@@ -276,6 +309,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $salesByStatus = $query->groupBy('sales.status')
@@ -291,7 +335,7 @@ class DashboardController extends Controller
     /**
      * Get top product data
      */
-    private function getTopProductData($startDate, $endDate, $allTime = false, $limit = 5)
+    private function getTopProductData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
     {
         $query = SalesItem::select(
             'sales_items.product_name as name',
@@ -301,6 +345,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $topProducts = $query->groupBy('sales_items.product_name')
@@ -319,7 +374,7 @@ class DashboardController extends Controller
     /**
      * Get top size data
      */
-    private function getTopSizeData($startDate, $endDate, $allTime = false, $limit = 5)
+    private function getTopSizeData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
     {
         $query = SalesItem::select(
             'sales_items.size as name',
@@ -331,6 +386,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $topSizes = $query->groupBy('sales_items.size')
@@ -349,7 +415,7 @@ class DashboardController extends Controller
     /**
      * Get top color data
      */
-    private function getTopColorData($startDate, $endDate, $allTime = false, $limit = 5)
+    private function getTopColorData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
     {
         $query = SalesItem::select(
             'sales_items.color as name',
@@ -361,6 +427,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $topColors = $query->groupBy('sales_items.color')
@@ -379,7 +456,7 @@ class DashboardController extends Controller
     /**
      * Get top city data
      */
-    private function getTopCityData($startDate, $endDate, $allTime = false, $limit = 5)
+    private function getTopCityData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
     {
         $query = Sales::select(
             'cities.name',
@@ -390,6 +467,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $topCities = $query->groupBy('cities.id', 'cities.name')
@@ -408,7 +496,7 @@ class DashboardController extends Controller
     /**
      * Get top subdistrict data
      */
-    private function getTopSubdistrictData($startDate, $endDate, $allTime = false, $limit = 5)
+    private function getTopSubdistrictData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
     {
         $query = Sales::select(
             'subdistricts.name',
@@ -419,6 +507,17 @@ class DashboardController extends Controller
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+        }
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $query->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
         }
 
         $topSubdistricts = $query->groupBy('subdistricts.id', 'subdistricts.name')
@@ -440,6 +539,7 @@ class DashboardController extends Controller
     public function getDashboardData(Request $request)
     {
         $allTime = $request->input('all_time', false);
+        $paymentStatus = $request->input('payment_status'); // paid, unpaid, or null for all
         
         $startDate = null;
         $endDate = null;
@@ -467,16 +567,16 @@ class DashboardController extends Controller
         $topSubdistrictLimit = (int) $request->input('top_subdistrict_limit', 5);
 
         $data = [
-            'summary' => $this->getGlobalSummaryData(), // Global, tidak terpengaruh filter
-            'monthlySales' => $this->getMonthlySalesData($startDate, $endDate, $allTime),
-            'salesByUser' => $this->getSalesByUserData($startDate, $endDate, $allTime),
-            'salesByPaymentType' => $this->getSalesByPaymentTypeData($startDate, $endDate, $allTime),
-            'salesByStatus' => $this->getSalesByStatusData($startDate, $endDate, $allTime),
-            'topProduct' => $this->getTopProductData($startDate, $endDate, $allTime, $topProductLimit),
-            'topSize' => $this->getTopSizeData($startDate, $endDate, $allTime, $topSizeLimit),
-            'topColor' => $this->getTopColorData($startDate, $endDate, $allTime, $topColorLimit),
-            'topCity' => $this->getTopCityData($startDate, $endDate, $allTime, $topCityLimit),
-            'topSubdistrict' => $this->getTopSubdistrictData($startDate, $endDate, $allTime, $topSubdistrictLimit),
+            'summary' => $this->getGlobalSummaryData($paymentStatus), // Global, tidak terpengaruh filter
+            'monthlySales' => $this->getMonthlySalesData($startDate, $endDate, $allTime, $paymentStatus),
+            'salesByUser' => $this->getSalesByUserData($startDate, $endDate, $allTime, $paymentStatus),
+            'salesByPaymentType' => $this->getSalesByPaymentTypeData($startDate, $endDate, $allTime, $paymentStatus),
+            'salesByStatus' => $this->getSalesByStatusData($startDate, $endDate, $allTime, $paymentStatus),
+            'topProduct' => $this->getTopProductData($startDate, $endDate, $allTime, $topProductLimit, $paymentStatus),
+            'topSize' => $this->getTopSizeData($startDate, $endDate, $allTime, $topSizeLimit, $paymentStatus),
+            'topColor' => $this->getTopColorData($startDate, $endDate, $allTime, $topColorLimit, $paymentStatus),
+            'topCity' => $this->getTopCityData($startDate, $endDate, $allTime, $topCityLimit, $paymentStatus),
+            'topSubdistrict' => $this->getTopSubdistrictData($startDate, $endDate, $allTime, $topSubdistrictLimit, $paymentStatus),
         ];
 
         return response()->json($data);
@@ -485,21 +585,52 @@ class DashboardController extends Controller
     /**
      * Get global summary data (tidak terpengaruh filter)
      */
-    private function getGlobalSummaryData()
+    private function getGlobalSummaryData($paymentStatus = null)
     {
+        // Base queries
+        $outstandingQuery = SalesOutstanding::query();
+        $itemQuery = SalesItem::query();
+        $unpaidQuery = Sales::query();
+        $paidQuery = Sales::query();
+        
+        // Apply payment status filter if specified
+        if ($paymentStatus === 'paid') {
+            $outstandingQuery->where('outstanding_amount', '<=', 0);
+            $itemQuery->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+            $unpaidQuery->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+            $paidQuery->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '<=', 0);
+            });
+        } elseif ($paymentStatus === 'unpaid') {
+            $outstandingQuery->where('outstanding_amount', '>', 0);
+            $itemQuery->whereHas('sale.outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
+            $unpaidQuery->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
+            $paidQuery->whereHas('outstanding', function ($q) {
+                $q->where('outstanding_amount', '>', 0);
+            });
+        }
+
         // Total Tanggungan (outstanding amount dari semua sales)
-        $totalTanggungan = SalesOutstanding::sum('outstanding_amount');
+        $totalTanggungan = $outstandingQuery->sum('outstanding_amount');
 
         // Total Terjual (total quantity dari semua sales items)
-        $totalTerjual = SalesItem::sum('quantity');
+        $totalTerjual = $itemQuery->sum('quantity');
 
         // Belum Lunas (sales dengan outstanding > 0)
-        $belumLunas = Sales::whereHas('outstanding', function ($query) {
+        $belumLunas = $unpaidQuery->whereHas('outstanding', function ($query) {
             $query->where('outstanding_amount', '>', 0);
         })->count();
 
         // Sudah Lunas (sales dengan outstanding <= 0)
-        $sudahLunas = Sales::whereHas('outstanding', function ($query) {
+        $sudahLunas = $paidQuery->whereHas('outstanding', function ($query) {
             $query->where('outstanding_amount', '<=', 0);
         })->count();
 
@@ -569,6 +700,7 @@ class DashboardController extends Controller
     public function getTopCardData(Request $request, $cardType)
     {
         $allTime = $request->input('all_time', false);
+        $paymentStatus = $request->input('payment_status'); // paid, unpaid, or null for all
         
         $startDate = null;
         $endDate = null;
@@ -592,19 +724,19 @@ class DashboardController extends Controller
 
         switch ($cardType) {
             case 'top-product':
-                $data = $this->getTopProductData($startDate, $endDate, $allTime, $limit);
+                $data = $this->getTopProductData($startDate, $endDate, $allTime, $limit, $paymentStatus);
                 break;
             case 'top-size':
-                $data = $this->getTopSizeData($startDate, $endDate, $allTime, $limit);
+                $data = $this->getTopSizeData($startDate, $endDate, $allTime, $limit, $paymentStatus);
                 break;
             case 'top-color':
-                $data = $this->getTopColorData($startDate, $endDate, $allTime, $limit);
+                $data = $this->getTopColorData($startDate, $endDate, $allTime, $limit, $paymentStatus);
                 break;
             case 'top-city':
-                $data = $this->getTopCityData($startDate, $endDate, $allTime, $limit);
+                $data = $this->getTopCityData($startDate, $endDate, $allTime, $limit, $paymentStatus);
                 break;
             case 'top-subdistrict':
-                $data = $this->getTopSubdistrictData($startDate, $endDate, $allTime, $limit);
+                $data = $this->getTopSubdistrictData($startDate, $endDate, $allTime, $limit, $paymentStatus);
                 break;
             default:
                 return response()->json(['error' => 'Invalid card type'], 400);

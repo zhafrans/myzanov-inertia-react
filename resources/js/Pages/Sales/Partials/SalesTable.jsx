@@ -29,9 +29,13 @@ import {
 import { toast } from "react-toastify";
 
 import CreateModal from "../CreateModal";
+import { canEditSales, canInputInstallment, canDeleteSales } from "@/lib/userRoles";
 
 // Mobile Card Component
 function SalesMobileCard({ item, collectors }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    
     const [openEdit, setOpenEdit] = useState(false);
     const [openTagihan, setOpenTagihan] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
@@ -159,16 +163,18 @@ function SalesMobileCard({ item, collectors }) {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2 pt-2 border-t">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleEditClick}
-                        className="flex-1 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 text-xs h-8"
-                    >
-                        <Pencil className="w-3 h-3 mr-1" />
-                        Edit
-                    </Button>
-                    {item.remaining > 0 && (
+                    {canEditSales(user) && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleEditClick}
+                            className="flex-1 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 text-xs h-8"
+                        >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Edit
+                        </Button>
+                    )}
+                    {item.remaining > 0 && canInputInstallment(user) && (
                         <Button
                             size="sm"
                             variant="outline"
@@ -179,39 +185,41 @@ function SalesMobileCard({ item, collectors }) {
                             Tagihan
                         </Button>
                     )}
-                    <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleDeleteClick}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8 px-2"
-                            >
-                                <Trash2 className="w-3 h-3" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                    Hapus Sales?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Apakah Anda yakin ingin menghapus sales ini?
-                                    Aksi ini tidak dapat dibatalkan dan akan
-                                    menghapus semua data terkait.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-red-600 hover:bg-red-700"
+                    {canDeleteSales(user) && (
+                        <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleDeleteClick}
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8 px-2"
                                 >
-                                    Hapus
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                                    <Trash2 className="w-3 h-3" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Hapus Sales?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Apakah Anda yakin ingin menghapus sales ini?
+                                        Aksi ini tidak dapat dibatalkan dan akan
+                                        menghapus semua data terkait.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        className="bg-red-600 hover:bg-red-700"
+                                    >
+                                        Hapus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </div>
 

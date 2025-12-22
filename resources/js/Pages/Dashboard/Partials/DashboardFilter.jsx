@@ -10,6 +10,13 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function DashboardFilter({ onFilterChange }) {
     // Default: bulan ini (tanggal awal bulan - tanggal akhir bulan)
@@ -25,6 +32,7 @@ export default function DashboardFilter({ onFilterChange }) {
 
     const [dateRange, setDateRange] = useState(getDefaultDateRange());
     const [isAllTime, setIsAllTime] = useState(false);
+    const [paymentStatus, setPaymentStatus] = useState(null); // null = all, 'paid' = paid, 'unpaid' = unpaid
 
     // Trigger filter change saat component mount dengan default value
     useEffect(() => {
@@ -32,6 +40,7 @@ export default function DashboardFilter({ onFilterChange }) {
             onFilterChange({
                 start_date: format(dateRange.from, "yyyy-MM-dd"),
                 end_date: format(dateRange.to, "yyyy-MM-dd"),
+                payment_status: paymentStatus,
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -43,6 +52,7 @@ export default function DashboardFilter({ onFilterChange }) {
             onFilterChange({
                 start_date: format(dateRange.from, "yyyy-MM-dd"),
                 end_date: format(dateRange.to, "yyyy-MM-dd"),
+                payment_status: paymentStatus,
             });
         }
     };
@@ -51,9 +61,11 @@ export default function DashboardFilter({ onFilterChange }) {
         const defaultRange = getDefaultDateRange();
         setDateRange(defaultRange);
         setIsAllTime(false);
+        setPaymentStatus(null);
         onFilterChange({
             start_date: format(defaultRange.from, "yyyy-MM-dd"),
             end_date: format(defaultRange.to, "yyyy-MM-dd"),
+            payment_status: null,
         });
     };
 
@@ -62,6 +74,7 @@ export default function DashboardFilter({ onFilterChange }) {
         setIsAllTime(true);
         onFilterChange({
             all_time: true,
+            payment_status: paymentStatus,
         });
     };
 
@@ -126,6 +139,22 @@ export default function DashboardFilter({ onFilterChange }) {
                                 />
                             </PopoverContent>
                         </Popover>
+                    </div>
+
+                    <div className="w-full sm:w-48">
+                        <label className="text-sm font-medium mb-1 block">
+                            Status Pembayaran
+                        </label>
+                        <Select value={paymentStatus || "all"} onValueChange={(value) => setPaymentStatus(value === "all" ? null : value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Semua Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua Status</SelectItem>
+                                <SelectItem value="paid">Lunas</SelectItem>
+                                <SelectItem value="unpaid">Belum Lunas</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="flex gap-2">

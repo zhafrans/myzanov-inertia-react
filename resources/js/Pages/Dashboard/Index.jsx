@@ -16,11 +16,13 @@ import axios from "axios";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { toast } from "react-toastify";
+import logo from "@/Public/Images/myzanovweb.png"; // Import logo
 
 export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [stats, setStats] = useState(null);
+
     // Default: bulan ini (tanggal awal bulan - tanggal akhir bulan)
     const getDefaultDateRange = () => {
         const now = new Date();
@@ -32,7 +34,10 @@ export default function Dashboard() {
         };
     };
 
-    const [filters, setFilters] = useState(getDefaultDateRange());
+    const [filters, setFilters] = useState({
+        ...getDefaultDateRange(),
+        payment_status: null, // null = all, 'paid' = paid, 'unpaid' = unpaid
+    });
 
     // State untuk limit setiap top card (default 5)
     const [limits, setLimits] = useState({
@@ -52,9 +57,13 @@ export default function Dashboard() {
         topSubdistrict: false,
     });
 
+    const [showWelcome, setShowWelcome] = useState(false);
+
     const fetchDashboardData = async () => {
         setLoading(true);
         setError(null);
+        setShowWelcome(false);
+
         try {
             const params = new URLSearchParams();
             if (filters.all_time) {
@@ -64,6 +73,11 @@ export default function Dashboard() {
                     params.append("start_date", filters.start_date);
                 if (filters.end_date)
                     params.append("end_date", filters.end_date);
+            }
+            
+            // Add payment status filter if specified
+            if (filters.payment_status) {
+                params.append("payment_status", filters.payment_status);
             }
 
             // Tambahkan limit untuk setiap top card (selalu default 5 untuk initial fetch)
@@ -79,63 +93,8 @@ export default function Dashboard() {
             setStats(response.data);
         } catch (err) {
             console.error("Error fetching dashboard data:", err);
-            setError("Gagal memuat data dashboard. Silakan coba lagi.");
-
-            // Fallback data untuk development
-            setStats({
-                summary: {
-                    totalTanggungan: "Rp 12.500.000",
-                    totalTerjual: 320,
-                    belumLunas: 45,
-                    sudahLunas: 275,
-                },
-                monthlySales: {
-                    months: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun"],
-                    series: [
-                        { name: "Umi", data: [10, 15, 20, 18, 22, 25] },
-                        { name: "Bihan", data: [8, 12, 15, 14, 18, 20] },
-                        { name: "Dilham", data: [12, 18, 22, 20, 25, 30] },
-                        { name: "Ati", data: [6, 10, 13, 12, 15, 20] },
-                    ],
-                },
-                salesByUser: {
-                    labels: ["Umi", "Bihan", "Dilham", "Ati"],
-                    values: [120, 80, 65, 55],
-                },
-                salesByPaymentType: {
-                    labels: ["cash", "credit", "cash_tempo"],
-                    values: [150, 100, 70],
-                },
-                salesByStatus: {
-                    labels: ["paid", "unpaid"],
-                    values: [200, 120],
-                },
-                topProduct: [
-                    { name: "Sepatu A", total: 120 },
-                    { name: "Sepatu B", total: 90 },
-                    { name: "Sepatu C", total: 60 },
-                ],
-                topSize: [
-                    { name: "40", total: 110 },
-                    { name: "41", total: 95 },
-                    { name: "42", total: 70 },
-                ],
-                topColor: [
-                    { name: "Hitam", total: 150 },
-                    { name: "Putih", total: 90 },
-                    { name: "Coklat", total: 80 },
-                ],
-                topCity: [
-                    { name: "Semarang", total: 140 },
-                    { name: "Surabaya", total: 110 },
-                    { name: "Jakarta", total: 70 },
-                ],
-                topSubdistrict: [
-                    { name: "Tembalang", total: 60 },
-                    { name: "Banyumanik", total: 50 },
-                    { name: "Pedurungan", total: 40 },
-                ],
-            });
+            // setError("Gagal memuat data dashboard. Silakan coba lagi.");
+            setShowWelcome(true); // Tampilkan halaman selamat datang
         } finally {
             setLoading(false);
         }
@@ -169,6 +128,8 @@ export default function Dashboard() {
 
     // Handler untuk menambah limit +5 dan fetch data individual
     const handleLoadMore = async (cardType) => {
+        if (!stats) return; // Jangan jalankan jika tidak ada data
+
         const newLimit = limits[cardType] + 5;
 
         // Set loading untuk card ini saja
@@ -187,6 +148,12 @@ export default function Dashboard() {
                 if (filters.end_date)
                     params.append("end_date", filters.end_date);
             }
+            
+            // Add payment status filter if specified
+            if (filters.payment_status) {
+                params.append("payment_status", filters.payment_status);
+            }
+            
             params.append("limit", newLimit);
 
             // Map cardType ke endpoint cardType
@@ -226,6 +193,62 @@ export default function Dashboard() {
         }
     };
 
+    // Tampilkan halaman selamat datang jika gagal memuat data
+    if (showWelcome) {
+        return (
+            <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="text-center space-y-8 max-w-2xl">
+                    <div className="flex justify-center">
+                        <img
+                            src={logo}
+                            alt="MyZANOV Web App"
+                            className="h-24 w-auto md:h-32 lg:h-40 animate-fade-in"
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-800 tracking-tight">
+                            SELAMAT DATANG
+                        </h1>
+                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-semibold text-primary-600">
+                            di MyZANOV Web App
+                        </h2>
+                    </div>
+
+                    <div className="space-y-6 pt-4">
+                        {/* <p className="text-lg md:text-xl text-gray-600 leading-relaxed">
+                            Aplikasi monitoring penjualan yang membantu Anda
+                            mengelola dan menganalisis data penjualan dengan
+                            mudah dan efisien.
+                        </p> */}
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
+                            >
+                                Coba Muat Ulang
+                            </button>
+                            {/* <button
+                                onClick={fetchDashboardData}
+                                className="px-6 py-3 bg-white text-primary-600 font-medium rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition-colors"
+                            >
+                                Refresh Data
+                            </button> */}
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <p className="text-red-600 text-sm">{error}</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Loading state (hanya tampilkan saat pertama kali loading)
     if (loading && !stats) {
         return (
             <div className="space-y-6">
@@ -254,9 +277,10 @@ export default function Dashboard() {
         );
     }
 
+    // Tampilkan dashboard jika data tersedia
     return (
         <div className="space-y-6">
-            {error && (
+            {error && !showWelcome && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
@@ -265,6 +289,24 @@ export default function Dashboard() {
 
             {stats && (
                 <>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-800">
+                                Dashboard
+                            </h1>
+                            <p className="text-gray-600">
+                                Monitor penjualan dan analisis data
+                            </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <img
+                                src={logo}
+                                alt="MyZANOV"
+                                className="h-10 w-auto opacity-90"
+                            />
+                        </div>
+                    </div>
+
                     <SummaryCards stats={stats.summary} />
                     <DashboardFilter onFilterChange={handleFilterChange} />
 

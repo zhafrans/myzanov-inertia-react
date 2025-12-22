@@ -20,7 +20,6 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 
@@ -35,13 +34,43 @@ export default function MobileBottomNav() {
         router.post(route("logout"));
     };
 
-    const menu = [
-        { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-        { label: "Sales", href: "/sales", icon: Banknote },
-        { label: "Users", href: "/users", icon: Users },
-        { label: "Products", href: "/products", icon: Footprints },
-        { label: "Landing Page", href: "/landing-page", icon: Globe },
-        { label: "Activity Logs", href: "/activity-logs", icon: Clock },
+    const mainMenu = [
+        {
+            label: "Dashboard",
+            href: "/dashboard",
+            icon: LayoutDashboard,
+            roles: ["SUPER_ADMIN"],
+        },
+        {
+            label: "Sales",
+            href: "/sales",
+            icon: Banknote,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Users",
+            href: "/users",
+            icon: Users,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Products",
+            href: "/products",
+            icon: Footprints,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Landing Page",
+            href: "/landing-page",
+            icon: Globe,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Activity Logs",
+            href: "/activity-logs",
+            icon: Clock,
+            roles: ["SUPER_ADMIN"],
+        },
     ];
 
     const collectorSubmenu = [
@@ -58,25 +87,109 @@ export default function MobileBottomNav() {
     ];
 
     const miscSubmenu = [
-        { label: "Users", href: "/users", icon: Users },
-        { label: "Products", href: "/products", icon: Footprints },
-        { label: "Landing Page", href: "/landing-page", icon: Globe },
-        { label: "Activity Logs", href: "/activity-logs", icon: Clock },
+        {
+            label: "Users",
+            href: "/users",
+            icon: Users,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Products",
+            href: "/products",
+            icon: Footprints,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Landing Page",
+            href: "/landing-page",
+            icon: Globe,
+            roles: ["SUPER_ADMIN", "ADMIN"],
+        },
+        {
+            label: "Activity Logs",
+            href: "/activity-logs",
+            icon: Clock,
+            roles: ["SUPER_ADMIN"],
+        },
     ];
 
-    // Get menu items - always the same for all pages
+    // Helper function to check if user has access
+    const hasAccess = (allowedRoles) => {
+        if (!user?.role) return false;
+        return allowedRoles.includes(user.role);
+    };
+
+    // Get filtered misc submenu based on user role
+    const getFilteredMiscSubmenu = () => {
+        if (!user?.role) return [];
+        return miscSubmenu.filter((item) => hasAccess(item.roles || []));
+    };
+
+    // Get filtered collector submenu based on user role
+    const getFilteredCollectorSubmenu = () => {
+        if (!user?.role) return [];
+        // Only show collector menu for SUPER_ADMIN and COLLECTOR
+        if (user.role === "SUPER_ADMIN" || user.role === "COLLECTOR") {
+            return collectorSubmenu;
+        }
+        return [];
+    };
+
+    // Get main menu items - filtered based on user role
     const getMenuItems = () => {
-        // Always show the same menu: Dashboard, Sales, Collector (sheet), Miscellaneous (sheet), Avatar
-        return [
-            menu[0], // Dashboard
-            menu[1], // Sales
-            { label: "Collector", href: "#", icon: Receipt, isSheet: true }, // Collector (opens sheet)
-            { label: "Misc", href: "#", icon: MoreHorizontal, isSheet: true }, // Miscellaneous (opens sheet)
-            { label: "Profile", href: "#", icon: null, isAvatar: true }, // Avatar (opens profile dialog)
-        ];
+        if (!user?.role) return [];
+
+        const filteredMenu = [];
+
+        // Filter and add regular menu items
+        mainMenu.forEach((item) => {
+            if (hasAccess(item.roles)) {
+                filteredMenu.push({
+                    ...item,
+                    isSheet: false,
+                    isAvatar: false,
+                });
+            }
+        });
+
+        // Collector sheet - only for SUPER_ADMIN and COLLECTOR
+        if (user.role === "SUPER_ADMIN" || user.role === "COLLECTOR") {
+            filteredMenu.push({
+                label: "Collector",
+                href: "#",
+                icon: Receipt,
+                isSheet: true,
+                isAvatar: false,
+            });
+        }
+
+        // Misc sheet - only show if user has access to at least one misc item
+        const filteredMiscItems = getFilteredMiscSubmenu();
+        if (filteredMiscItems.length > 0) {
+            filteredMenu.push({
+                label: "Misc",
+                href: "#",
+                icon: MoreHorizontal,
+                isSheet: true,
+                isAvatar: false,
+            });
+        }
+
+        // Profile avatar - always show
+        filteredMenu.push({
+            label: "Profile",
+            href: "#",
+            icon: null,
+            isSheet: false,
+            isAvatar: true,
+        });
+
+        return filteredMenu;
     };
 
     const menuItems = getMenuItems();
+    const filteredMiscSubmenu = getFilteredMiscSubmenu();
+    const filteredCollectorSubmenu = getFilteredCollectorSubmenu();
 
     // Check if item is active
     const isActive = (href) => {
@@ -135,15 +248,19 @@ export default function MobileBottomNav() {
 
                         if (item.isSheet) {
                             // Check if any submenu item is active for highlighting
-                            const isSubmenuActive =
-                                item.label === "Collector"
-                                    ? url.startsWith("/collector")
-                                    : item.label === "Misc"
-                                    ? url.startsWith("/users") ||
-                                      url.startsWith("/products") ||
-                                      url.startsWith("/landing-page") ||
-                                      url.startsWith("/activity-logs")
-                                    : false;
+                            const isSubmenuActive = (() => {
+                                if (item.label === "Collector") {
+                                    return url.startsWith("/collector");
+                                }
+                                if (item.label === "Misc") {
+                                    return filteredMiscSubmenu.some(
+                                        (subItem) =>
+                                            url === subItem.href ||
+                                            url.startsWith(subItem.href + "/")
+                                    );
+                                }
+                                return false;
+                            })();
 
                             return (
                                 <button
@@ -205,7 +322,7 @@ export default function MobileBottomNav() {
                         <SheetTitle>Menu Collector</SheetTitle>
                     </SheetHeader>
                     <div className="space-y-2 py-4">
-                        {collectorSubmenu.map((item) => {
+                        {filteredCollectorSubmenu.map((item) => {
                             const Icon = item.icon;
                             const active = isActive(item.href);
 
@@ -242,7 +359,7 @@ export default function MobileBottomNav() {
                         <SheetTitle>Miscellaneous</SheetTitle>
                     </SheetHeader>
                     <div className="space-y-2 py-4">
-                        {miscSubmenu.map((item) => {
+                        {filteredMiscSubmenu.map((item) => {
                             const Icon = item.icon;
                             const active = isActive(item.href);
 

@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('category')->nullable();
             $table->string('gender')->nullable();
             $table->string('material')->nullable();
+            $table->decimal('purchase_price', 15, 2)->nullable();
             $table->decimal('cash_price', 15, 2)->nullable();
             $table->decimal('credit_price', 15, 2)->nullable();
             $table->string('image')->nullable();

@@ -2,7 +2,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Pencil, FilePlus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { router } from "@inertiajs/react";
+import { router, usePage } from "@inertiajs/react";
 import { toast } from "react-toastify";
 import EditSalesModal from "../EditSalesModal";
 import InputInstallmentModal from "../InputInstallmentModal";
@@ -17,8 +17,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { canEditSales, canInputInstallment, canDeleteSales } from "@/lib/userRoles";
 
 export default function SalesTableRow({ item, collectors }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    
     const [openEdit, setOpenEdit] = useState(false);
     const [openTagihan, setOpenTagihan] = useState(false);
     const [openDelete, setOpenDelete] = useState(false);
@@ -143,17 +147,19 @@ export default function SalesTableRow({ item, collectors }) {
 
                 {/* Actions */}
                 <TableCell className="flex gap-2">
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={handleEditClick}
-                        className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
-                        title="Edit"
-                    >
-                        <Pencil className="w-4 h-4" />
-                    </Button>
+                    {canEditSales(user) && (
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={handleEditClick}
+                            className="text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                            title="Edit"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </Button>
+                    )}
 
-                    {item.remaining > 0 && (
+                    {item.remaining > 0 && canInputInstallment(user) && (
                         <Button
                             size="icon"
                             variant="secondary"
@@ -165,40 +171,42 @@ export default function SalesTableRow({ item, collectors }) {
                         </Button>
                     )}
 
-                    <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                size="icon"
-                                variant="outline"
-                                onClick={handleDeleteClick}
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                                title="Hapus"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                    Hapus Sales?
-                                </AlertDialogTitle>
+                    {canDeleteSales(user) && (
+                        <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    onClick={handleDeleteClick}
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                                    title="Hapus"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Hapus Sales?
+                                    </AlertDialogTitle>
                                 <AlertDialogDescription>
                                     Apakah Anda yakin ingin menghapus sales ini?
                                     Aksi ini tidak dapat dibatalkan dan akan
                                     menghapus semua data terkait.
                                 </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleDelete}
-                                    className="bg-red-600 hover:bg-red-700"
-                                >
-                                    Hapus
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleDelete}
+                                        className="bg-red-600 hover:bg-red-700"
+                                    >
+                                        Hapus
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </TableCell>
             </TableRow>
 
