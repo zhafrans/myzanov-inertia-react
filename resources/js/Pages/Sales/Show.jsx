@@ -54,41 +54,47 @@ export default function SalesShow() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 -mx-6 md:mx-auto px-6 md:px-0">
             {/* HEADER */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleBack}
-                        className="h-8 w-8"
+                        className="h-8 w-8 flex-shrink-0"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <div>
-                        <h1 className="text-2xl font-bold">
-                            Detail Sales - {sale.card_number || "No Card"}
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-xl md:text-2xl font-bold truncate">
+                            No Kartu - {sale.card_number || "No Card"}
                         </h1>
-                        <p className="text-sm text-muted-foreground">
-                            Invoice: {sale.invoice} | Tanggal:{" "}
+                        <p className="text-xs md:text-sm text-muted-foreground truncate">
+                            {sale.invoice} | {" "}
                             {sale.transaction_date}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <Button
                         onClick={handleEdit}
                         variant="outline"
-                        className="text-yellow-600"
+                        size="sm"
+                        className="text-yellow-600 flex-1 md:flex-initial text-xs md:text-sm"
                     >
-                        <Edit className="w-4 h-4 mr-2" />
+                        <Edit className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Edit
                     </Button>
 
-                    <Button onClick={handlePrint} variant="outline">
-                        <Printer className="w-4 h-4 mr-2" />
+                    <Button 
+                        onClick={handlePrint} 
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 md:flex-initial text-xs md:text-sm"
+                    >
+                        <Printer className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Print
                     </Button>
 
@@ -96,8 +102,10 @@ export default function SalesShow() {
                         <Button
                             onClick={() => setOpenTagihan(true)}
                             variant="secondary"
+                            size="sm"
+                            className="flex-1 md:flex-initial text-xs md:text-sm"
                         >
-                            <FilePlus className="w-4 h-4 mr-2" />
+                            <FilePlus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                             Input Tagihan
                         </Button>
                     )}

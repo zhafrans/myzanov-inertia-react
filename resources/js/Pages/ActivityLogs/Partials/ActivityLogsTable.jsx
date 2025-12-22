@@ -45,7 +45,8 @@ export default function ActivityLogsTable({ logs, loading }) {
 
     return (
         <div className="space-y-4">
-            <div className="relative border rounded-lg overflow-hidden">
+            {/* TABLE - Desktop */}
+            <div className="hidden md:block relative border rounded-lg overflow-hidden">
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -129,25 +130,141 @@ export default function ActivityLogsTable({ logs, loading }) {
                 </Table>
             </div>
 
+            {/* MOBILE CARD VIEW */}
+            <div className="md:hidden space-y-0 overflow-hidden -mx-6">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    </div>
+                )}
+                {logs.data.length > 0 ? (
+                    logs.data.map((log) => (
+                        <div
+                            key={log.id}
+                            className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3"
+                        >
+                            {/* User & Action */}
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        User
+                                    </p>
+                                    <p className="text-sm font-semibold">
+                                        {log.user ? log.user.name : 'System'}
+                                    </p>
+                                </div>
+                                <Badge variant={actionVariant(log.action)}>
+                                    {log.action}
+                                </Badge>
+                            </div>
+
+                            {/* Module & Description */}
+                            <div className="mb-2">
+                                {log.module && (
+                                    <div className="mb-1">
+                                        <p className="text-xs text-muted-foreground mb-0.5">
+                                            Module
+                                        </p>
+                                        <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">
+                                            {log.module}
+                                        </span>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        Description
+                                    </p>
+                                    <p className="text-xs line-clamp-2">
+                                        {log.description}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* IP Address & Date */}
+                            <div className="flex items-center justify-between pt-2 border-t">
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        IP Address
+                                    </p>
+                                    <p className="text-xs font-mono">
+                                        {log.ip_address}
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        Date
+                                    </p>
+                                    <p className="text-xs">
+                                        {formatDate(log.created_at)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground px-6">
+                        No activity logs found
+                    </div>
+                )}
+            </div>
+
             {/* Pagination */}
             {logs.data.length > 0 && (
-                <div className="flex items-center justify-between px-2 py-4">
-                    <div className="text-sm text-muted-foreground">
-                        Showing {logs.from} to {logs.to} of {logs.total} entries
+                <>
+                    {/* Desktop Pagination */}
+                    <div className="hidden md:flex items-center justify-between px-2 py-4">
+                        <div className="text-sm text-muted-foreground">
+                            Showing {logs.from} to {logs.to} of {logs.total} entries
+                        </div>
+                        <div className="flex gap-2">
+                            {logs.links.map((link, index) => (
+                                <Button
+                                    key={index}
+                                    variant={link.active ? "default" : "outline"}
+                                    size="sm"
+                                    disabled={!link.url}
+                                    onClick={() => handlePageClick(link.url)}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        {logs.links.map((link, index) => (
-                            <Button
-                                key={index}
-                                variant={link.active ? "default" : "outline"}
-                                size="sm"
-                                disabled={!link.url}
-                                onClick={() => handlePageClick(link.url)}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                            />
-                        ))}
+
+                    {/* Mobile Pagination */}
+                    <div className="md:hidden flex items-center justify-between gap-4 px-4 py-3 -mx-6 md:mx-0">
+                        <div className="text-xs text-muted-foreground">
+                            {logs.from}-{logs.to} of {logs.total}
+                        </div>
+                        <div className="flex gap-2 flex-1">
+                            {(() => {
+                                const prevLink = logs.links[0];
+                                const nextLink = logs.links[logs.links.length - 1];
+                                return (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => prevLink?.url && handlePageClick(prevLink.url)}
+                                            disabled={!prevLink?.url}
+                                            className="flex-1 text-xs"
+                                        >
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => nextLink?.url && handlePageClick(nextLink.url)}
+                                            disabled={!nextLink?.url}
+                                            className="flex-1 text-xs"
+                                        >
+                                            Next
+                                        </Button>
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     )

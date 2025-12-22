@@ -13,15 +13,15 @@ export default function SalesDetailInfo({ data }) {
             {/* STATUS */}
             <div className="text-center">
                 {data.isLunas ? (
-                    <div className="text-4xl font-extrabold text-green-600">
+                    <div className="text-2xl md:text-4xl font-extrabold text-green-600">
                         LUNAS
                     </div>
                 ) : (
                     <div className="space-y-2">
-                        <Badge variant="destructive" className="text-lg px-6 py-2">
+                        <Badge variant="destructive" className="text-sm md:text-lg px-4 md:px-6 py-1 md:py-2">
                             BELUM LUNAS
                         </Badge>
-                        <p className="text-red-600 font-semibold">
+                        <p className="text-red-600 font-semibold text-sm md:text-base">
                             Sisa: Rp {data.remaining.toLocaleString()}
                         </p>
                     </div>
@@ -31,9 +31,9 @@ export default function SalesDetailInfo({ data }) {
             {/* CUSTOMER */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Informasi Customer</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Informasi Customer</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm">
                     <Info label="No Kartu" value={data.customer.cardNo} />
                     <Info label="Nama" value={data.customer.name} />
                     <Info label="No. Telp" value={data.customer.phone} />
@@ -46,38 +46,38 @@ export default function SalesDetailInfo({ data }) {
             {/* ADDRESS */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Alamat</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Alamat</CardTitle>
                 </CardHeader>
                 <CardContent className="text-sm space-y-1">
-                    <p className="font-medium">{data.address.street}</p>
-                    {data.address.village && <p>Desa: {data.address.village}</p>}
-                    <p>Kecamatan: {data.address.subdistrict}</p>
-                    <p>Kabupaten/Kota: {data.address.city}</p>
-                    {data.address.province && <p>Provinsi: {data.address.province}</p>}
+                    <p className="font-medium break-words">{data.address.street}</p>
+                    {data.address.village && <p className="break-words">Desa: {data.address.village}</p>}
+                    <p className="break-words">Kecamatan: {data.address.subdistrict}</p>
+                    <p className="break-words">Kabupaten/Kota: {data.address.city}</p>
+                    {data.address.province && <p className="break-words">Provinsi: {data.address.province}</p>}
                 </CardContent>
             </Card>
 
             {/* ITEMS */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Daftar Item</CardTitle>
-                    <Badge variant="outline">{data.items.length} Item</Badge>
+                    <CardTitle className="text-lg md:text-xl">Daftar Item</CardTitle>
+                    <Badge variant="outline" className="text-xs md:text-sm">{data.items.length} Item</Badge>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                     {data.items.map((item, i) => (
                         <div
                             key={i}
-                            className="flex justify-between border rounded-md p-3 hover:bg-gray-50"
+                            className="flex flex-col md:flex-row md:justify-between gap-2 border rounded-md p-3 hover:bg-gray-50"
                         >
-                            <div>
-                                <p className="font-semibold">
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate">
                                     {item.product || 'Produk'}
                                 </p>
-                                <p className="text-muted-foreground">
+                                <p className="text-muted-foreground text-xs md:text-sm">
                                     Warna: {item.color || '-'} | Size: {item.size || '-'} | Qty: {item.quantity || 1}
                                 </p>
                             </div>
-                            <div className="font-medium">
+                            <div className="font-medium text-sm md:text-base flex-shrink-0">
                                 Rp {(item.price || 0).toLocaleString()}
                             </div>
                         </div>
@@ -88,7 +88,7 @@ export default function SalesDetailInfo({ data }) {
             {/* SUMMARY */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Ringkasan</CardTitle>
+                    <CardTitle className="text-lg md:text-xl">Ringkasan</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
                     <Summary
@@ -116,7 +116,7 @@ export default function SalesDetailInfo({ data }) {
                             <Separator />
                             <div>
                                 <p className="text-muted-foreground mb-1">Catatan:</p>
-                                <p className="text-sm italic">{data.note}</p>
+                                <p className="text-xs md:text-sm italic break-words">{data.note}</p>
                             </div>
                         </>
                     )}

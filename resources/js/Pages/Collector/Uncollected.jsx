@@ -115,7 +115,7 @@ export default function CollectorUncollected() {
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex flex-wrap gap-4 items-end -mx-6 md:mx-0 px-6 md:px-0">
                     {showCollectorFilter && (
                         <div className="w-full md:w-auto">
                             <label className="text-sm font-medium mb-2 block">
@@ -165,17 +165,17 @@ export default function CollectorUncollected() {
                     <SalesFilters filters={filters} setFilters={setFilters} />
                 </div>
 
-                {/* Table */}
+                {/* Table - Desktop */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Daftar Belum Tertagih</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Invoice</TableHead>
+                                        <TableHead>Card No</TableHead>
                                         <TableHead>Customer</TableHead>
                                         <TableHead>Sales</TableHead>
                                         <TableHead>Product</TableHead>
@@ -192,9 +192,20 @@ export default function CollectorUncollected() {
                                 <TableBody>
                                     {sales.data && sales.data.length > 0 ? (
                                         sales.data.map((sale) => (
-                                            <TableRow key={sale.id}>
+                                            <TableRow
+                                                key={sale.id}
+                                                className="cursor-pointer hover:bg-muted/50"
+                                                onClick={() =>
+                                                    router.visit(
+                                                        route(
+                                                            "sales.show",
+                                                            sale.id
+                                                        )
+                                                    )
+                                                }
+                                            >
                                                 <TableCell>
-                                                    {sale.invoice}
+                                                    {sale.card_number || sale.invoice}
                                                 </TableCell>
                                                 <TableCell>
                                                     {sale.customer_name}
@@ -265,6 +276,131 @@ export default function CollectorUncollected() {
                                     )}
                                 </TableBody>
                             </Table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-0 overflow-hidden -mx-6">
+                            {sales.data && sales.data.length > 0 ? (
+                                sales.data.map((sale) => (
+                                    <div
+                                        key={sale.id}
+                                        onClick={() =>
+                                            router.visit(route("sales.show", sale.id))
+                                        }
+                                        className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
+                                    >
+                                        {/* Card No */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Card No
+                                            </p>
+                                            <p className="text-sm font-semibold">
+                                                {sale.card_number || sale.invoice || "-"}
+                                            </p>
+                                        </div>
+
+                                        {/* Customer */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Customer
+                                            </p>
+                                            <p className="text-sm font-medium">
+                                                {sale.customer_name || "-"}
+                                            </p>
+                                        </div>
+
+                                        {/* Sales & Product */}
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Sales
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {sale.sales || "-"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Produk
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {sale.product || "-"}
+                                                    {sale.color && ` - ${sale.color}`}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Tanggal Transaksi */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Tanggal Transaksi
+                                            </p>
+                                            <p className="text-xs font-medium">
+                                                {formatDate(sale.date)}
+                                            </p>
+                                        </div>
+
+                                        {/* Sisa Tagihan */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Sisa Tagihan
+                                            </p>
+                                            <p
+                                                className={`text-sm font-bold ${
+                                                    sale.remaining > 0
+                                                        ? "text-red-600"
+                                                        : "text-green-600"
+                                                }`}
+                                            >
+                                                {formatCurrency(sale.remaining)}
+                                            </p>
+                                        </div>
+
+                                        {/* Terakhir Ditagih & Jumlah Terakhir */}
+                                        {sale.last_collected_at && (
+                                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                                        Terakhir Ditagih
+                                                    </p>
+                                                    <p className="text-xs font-medium">
+                                                        {formatDate(sale.last_collected_at)}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                                        Jumlah Terakhir
+                                                    </p>
+                                                    <p className="text-xs font-semibold">
+                                                        {formatCurrency(sale.last_installment_amount)}
+                                                    </p>
+                                                    {sale.last_collector_name && (
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            by {sale.last_collector_name}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Collector (jika showAllCollectors) */}
+                                        {showAllCollectors && sale.last_collector_name && (
+                                            <div className="pt-2 border-t">
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Collector
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {sale.last_collector_name}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground px-6">
+                                    Tidak ada data tagihan yang belum tertagih
+                                </div>
+                            )}
                         </div>
 
                         {sales.links && sales.links.length > 1 && (

@@ -41,6 +41,7 @@ export default function CollectorIndex() {
         payment_type: initialFilters.payment_type || "all",
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
+        all_time: initialFilters.all_time || false,
         collector_id: showAllCollectors
             ? "all"
             : selectedCollectorId?.toString() || "all",
@@ -76,6 +77,15 @@ export default function CollectorIndex() {
         // Jika collector_id adalah "all", kirim null atau hapus parameter
         if (params.collector_id === "all") {
             delete params.collector_id;
+        }
+
+        // Jika all_time true, hapus startDate dan endDate
+        if (params.all_time) {
+            delete params.startDate;
+            delete params.endDate;
+        } else {
+            // Jika all_time false, hapus all_time dari params
+            delete params.all_time;
         }
 
         router.get(route("collector.index"), params, {
@@ -185,7 +195,7 @@ export default function CollectorIndex() {
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex flex-wrap gap-4 items-end -mx-6 md:mx-0 px-6 md:px-0">
                     {showCollectorFilter && (
                         <div className="w-full md:w-auto">
                             <label className="text-sm font-medium mb-2 block">
@@ -237,48 +247,96 @@ export default function CollectorIndex() {
 
                 {/* Charts - hanya tampilkan jika tidak menampilkan semua collector */}
                 {!showAllCollectors && chartData && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                        {/* Average Count Card */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Tagihan Per Periode</CardTitle>
+                                <CardTitle>Rata-rata Jumlah Tagihan</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                {chartData?.monthlyData?.values?.length > 0 ? (
-                                    <Chart
-                                        type="line"
-                                        height={300}
-                                        series={monthlyChartSeries}
-                                        options={monthlyChartOptions}
-                                    />
-                                ) : (
-                                    <div className="h-80 flex items-center justify-center text-muted-foreground">
-                                        Tidak ada data tagihan
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">
+                                                Rata-rata per hari
+                                            </p>
+                                            <p className="text-3xl font-bold mt-2">
+                                                {chartData?.averageCount?.average?.toFixed(2) || "0"}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                dari {Math.floor(chartData?.averageCount?.days_with_installments || 0)} hari yang memiliki tagihan
+                                            </p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm text-muted-foreground">
+                                                Total tagihan
+                                            </p>
+                                            <p className="text-2xl font-semibold mt-2">
+                                                {chartData?.averageCount?.total || 0}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                                dalam {Math.floor(chartData?.averageCount?.days || 0)} hari
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
+                                    <div className="border-t pt-4">
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-sm text-muted-foreground">
+                                                Total Nominal
+                                            </p>
+                                            <p className="text-xl font-bold">
+                                                {formatCurrency(chartData?.averageCount?.total_amount || 0)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>
-                                    Tagihan per Tipe Pembayaran
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                {paymentTypeChartSeries.length > 0 ? (
-                                    <Chart
-                                        type="pie"
-                                        height={300}
-                                        series={paymentTypeChartSeries}
-                                        options={paymentTypeChartOptions}
-                                    />
-                                ) : (
-                                    <div className="h-80 flex items-center justify-center text-muted-foreground">
-                                        Tidak ada data pembayaran
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                        {/* Charts Grid */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Tagihan Per Periode</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {chartData?.monthlyData?.values?.length > 0 ? (
+                                        <Chart
+                                            type="line"
+                                            height={300}
+                                            series={monthlyChartSeries}
+                                            options={monthlyChartOptions}
+                                        />
+                                    ) : (
+                                        <div className="h-80 flex items-center justify-center text-muted-foreground">
+                                            Tidak ada data tagihan
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>
+                                        Tagihan per Tipe Pembayaran
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    {paymentTypeChartSeries.length > 0 ? (
+                                        <Chart
+                                            type="pie"
+                                            height={300}
+                                            series={paymentTypeChartSeries}
+                                            options={paymentTypeChartOptions}
+                                        />
+                                    ) : (
+                                        <div className="h-80 flex items-center justify-center text-muted-foreground">
+                                            Tidak ada data pembayaran
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 )}
 
@@ -297,74 +355,84 @@ export default function CollectorIndex() {
                     </Card>
                 )}
 
-                {/* Table */}
+                {/* Table - Desktop */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Daftar Tagihan</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="overflow-x-auto">
+                        <div className="hidden md:block overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Invoice</TableHead>
+                                        <TableHead>Card No</TableHead>
                                         <TableHead>Customer</TableHead>
                                         <TableHead>Sales</TableHead>
                                         <TableHead>Product</TableHead>
                                         <TableHead>Tanggal Transaksi</TableHead>
                                         <TableHead>Total Harga</TableHead>
                                         <TableHead>Sisa Tagihan</TableHead>
+                                        <TableHead>Tanggal Tagihan</TableHead>
+                                        <TableHead>Jumlah Tagihan</TableHead>
                                         <TableHead>Nama Penagih</TableHead>
-                                        <TableHead>Terakhir Ditagih</TableHead>
-                                        <TableHead>Jumlah Terakhir</TableHead>
                                         <TableHead>Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {sales.data && sales.data.length > 0 ? (
-                                        sales.data.map((sale) => (
+                                        sales.data.map((installment) => (
                                             <TableRow
-                                                key={sale.id}
+                                                key={installment.id}
                                                 className="cursor-pointer hover:bg-muted/50"
                                                 onClick={() =>
                                                     router.visit(
                                                         route(
                                                             "sales.show",
-                                                            sale.id
+                                                            installment.sale_id
                                                         )
                                                     )
                                                 }
                                             >
                                                 <TableCell>
-                                                    {sale.invoice}
+                                                    {installment.card_number || installment.invoice}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {sale.customer_name}
+                                                    {installment.customer_name}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {sale.sales}
+                                                    {installment.sales}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {sale.product} -{" "}
-                                                    {sale.color}
+                                                    {installment.product} -{" "}
+                                                    {installment.color}
                                                     <br />
                                                     <span className="text-xs text-muted-foreground">
-                                                        Size: {sale.size}
+                                                        Size: {installment.size}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {formatDate(sale.date)}
+                                                    {formatDate(installment.date)}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {formatCurrency(sale.price)}
+                                                    {formatCurrency(installment.price)}
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatCurrency(
-                                                        sale.remaining
+                                                        installment.remaining
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {sale.last_collector_name ? (
+                                                    {formatDate(
+                                                        installment.payment_date
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatCurrency(
+                                                        installment.installment_amount
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {installment.collector_name ? (
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
@@ -380,7 +448,7 @@ export default function CollectorIndex() {
                                                                                     c
                                                                                 ) =>
                                                                                     c.name ===
-                                                                                    sale.last_collector_name
+                                                                                    installment.collector_name
                                                                             )
                                                                             ?.id.toString() ||
                                                                         "all",
@@ -388,7 +456,7 @@ export default function CollectorIndex() {
                                                             }}
                                                         >
                                                             {
-                                                                sale.last_collector_name
+                                                                installment.collector_name
                                                             }
                                                         </Button>
                                                     ) : (
@@ -396,25 +464,15 @@ export default function CollectorIndex() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {formatDate(
-                                                        sale.last_collected_at
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {formatCurrency(
-                                                        sale.last_installment_amount
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
                                                     <span
                                                         className={`px-2 py-1 rounded text-xs ${
-                                                            sale.status ===
+                                                            installment.status ===
                                                             "paid"
                                                                 ? "bg-green-100 text-green-800"
                                                                 : "bg-yellow-100 text-yellow-800"
                                                         }`}
                                                     >
-                                                        {sale.status === "paid"
+                                                        {installment.status === "paid"
                                                             ? "Lunas"
                                                             : "Belum Lunas"}
                                                     </span>
@@ -433,6 +491,132 @@ export default function CollectorIndex() {
                                     )}
                                 </TableBody>
                             </Table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-0 overflow-hidden -mx-6">
+                            {sales.data && sales.data.length > 0 ? (
+                                sales.data.map((installment) => (
+                                    <div
+                                        key={installment.id}
+                                        onClick={() =>
+                                            router.visit(
+                                                route("sales.show", installment.sale_id)
+                                            )
+                                        }
+                                        className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
+                                    >
+                                        {/* Card No */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Card No
+                                            </p>
+                                            <p className="text-sm font-semibold">
+                                                {installment.card_number || installment.invoice || "-"}
+                                            </p>
+                                        </div>
+
+                                        {/* Customer */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Customer
+                                            </p>
+                                            <p className="text-sm font-medium">
+                                                {installment.customer_name || "-"}
+                                            </p>
+                                        </div>
+
+                                        {/* Sales & Product */}
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Sales
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {installment.sales || "-"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Produk
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {installment.product || "-"}
+                                                    {installment.color && ` - ${installment.color}`}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Tanggal Transaksi */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Tanggal Transaksi
+                                            </p>
+                                            <p className="text-xs font-medium">
+                                                {formatDate(installment.date)}
+                                            </p>
+                                        </div>
+
+                                        {/* Jumlah Tagihan & Sisa Tagihan */}
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Jumlah Tagihan
+                                                </p>
+                                                <p className="text-xs font-semibold">
+                                                    {formatCurrency(installment.installment_amount)}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Sisa Tagihan
+                                                </p>
+                                                <p
+                                                    className={`text-xs font-bold ${
+                                                        installment.remaining > 0
+                                                            ? "text-red-600"
+                                                            : "text-green-600"
+                                                    }`}
+                                                >
+                                                    {formatCurrency(installment.remaining)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Nama Penagih & Status */}
+                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Penagih
+                                                </p>
+                                                <p className="text-xs font-medium">
+                                                    {installment.collector_name || "-"}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Status
+                                                </p>
+                                                <span
+                                                    className={`inline-block px-2 py-0.5 rounded text-xs ${
+                                                        installment.status === "paid"
+                                                            ? "bg-green-100 text-green-800"
+                                                            : "bg-yellow-100 text-yellow-800"
+                                                    }`}
+                                                >
+                                                    {installment.status === "paid"
+                                                        ? "Lunas"
+                                                        : "Belum Lunas"}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8 text-muted-foreground px-6">
+                                    Tidak ada data tagihan
+                                </div>
+                            )}
                         </div>
 
                         {sales.links && sales.links.length > 1 && (

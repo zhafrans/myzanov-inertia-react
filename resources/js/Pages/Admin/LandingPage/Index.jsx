@@ -131,14 +131,14 @@ export default function LandingPageAdmin({ contents }) {
                 </div>
 
                 <Tabs defaultValue="home_hero" className="w-full">
-                    <TabsList className="grid w-full grid-cols-5">
-                        <TabsTrigger value="home_hero">Home Hero</TabsTrigger>
-                        <TabsTrigger value="home_about">Home About</TabsTrigger>
-                        <TabsTrigger value="about_content">
+                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 md:gap-0">
+                        <TabsTrigger value="home_hero" className="text-xs md:text-sm">Home Hero</TabsTrigger>
+                        <TabsTrigger value="home_about" className="text-xs md:text-sm">Home About</TabsTrigger>
+                        <TabsTrigger value="about_content" className="text-xs md:text-sm">
                             About Page
                         </TabsTrigger>
-                        <TabsTrigger value="contact_info">Contact</TabsTrigger>
-                        <TabsTrigger value="footer">Footer</TabsTrigger>
+                        <TabsTrigger value="contact_info" className="text-xs md:text-sm">Contact</TabsTrigger>
+                        <TabsTrigger value="footer" className="text-xs md:text-sm">Footer</TabsTrigger>
                     </TabsList>
 
                     {Object.entries(sections).map(([sectionKey, section]) => (

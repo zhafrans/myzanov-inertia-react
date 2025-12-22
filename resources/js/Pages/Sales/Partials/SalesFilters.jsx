@@ -13,51 +13,142 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Filter } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon, Filter } from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { useState, useEffect } from "react";
 
 export default function SalesFilters({ filters, setFilters }) {
+    const [dateRange, setDateRange] = useState(() => {
+        if (filters.startDate && filters.endDate) {
+            return {
+                from: new Date(filters.startDate),
+                to: new Date(filters.endDate),
+            };
+        }
+        return { from: null, to: null };
+    });
+    const [isAllTime, setIsAllTime] = useState(filters.all_time || false);
+
+    useEffect(() => {
+        if (filters.startDate && filters.endDate && !filters.all_time) {
+            setDateRange({
+                from: new Date(filters.startDate),
+                to: new Date(filters.endDate),
+            });
+            setIsAllTime(false);
+        } else if (filters.all_time) {
+            setIsAllTime(true);
+        }
+    }, [filters.startDate, filters.endDate, filters.all_time]);
+
+    const handleDateRangeChange = (range) => {
+        setDateRange(range);
+        if (range?.from && range?.to) {
+            setIsAllTime(false);
+            setFilters({
+                ...filters,
+                startDate: format(range.from, "yyyy-MM-dd"),
+                endDate: format(range.to, "yyyy-MM-dd"),
+                all_time: false,
+            });
+        }
+    };
+
+    const handleAllTime = () => {
+        setIsAllTime(true);
+        setDateRange({ from: null, to: null });
+        setFilters({
+            ...filters,
+            startDate: "",
+            endDate: "",
+            all_time: true,
+        });
+    };
+
+    const handleResetDate = () => {
+        setIsAllTime(false);
+        setDateRange({ from: null, to: null });
+        setFilters({
+            ...filters,
+            startDate: "",
+            endDate: "",
+            all_time: false,
+        });
+    };
+
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="outline">
-                    <Filter className="w-4 h-4 mr-2" />
+                <Button variant="outline" size="sm" className="w-full md:w-auto text-xs md:text-sm">
+                    <Filter className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Filter
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-72 space-y-4">
+            <PopoverContent className="w-80 space-y-4">
                 {/* Date Range Filter */}
                 <div className="space-y-3">
                     <p className="text-sm font-semibold">Rentang Tanggal</p>
-                    <div className="space-y-2">
-                        <div>
-                            <Label htmlFor="startDate" className="text-xs">
-                                Dari Tanggal
-                            </Label>
-                            <Input
-                                id="startDate"
-                                type="date"
-                                value={filters.startDate || ""}
-                                onChange={(e) =>
-                                    setFilters({ ...filters, startDate: e.target.value })
-                                }
-                                className="mt-1"
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {isAllTime ? (
+                                    <span>All Time</span>
+                                ) : dateRange?.from ? (
+                                    dateRange.to ? (
+                                        <>
+                                            {format(dateRange.from, "dd MMM yyyy", {
+                                                locale: id,
+                                            })}{" "}
+                                            -{" "}
+                                            {format(dateRange.to, "dd MMM yyyy", {
+                                                locale: id,
+                                            })}
+                                        </>
+                                    ) : (
+                                        format(dateRange.from, "dd MMM yyyy", {
+                                            locale: id,
+                                        })
+                                    )
+                                ) : (
+                                    <span>Pilih rentang tanggal</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={dateRange?.from}
+                                selected={dateRange}
+                                onSelect={handleDateRangeChange}
+                                numberOfMonths={2}
                             />
-                        </div>
-                        <div>
-                            <Label htmlFor="endDate" className="text-xs">
-                                Sampai Tanggal
-                            </Label>
-                            <Input
-                                id="endDate"
-                                type="date"
-                                value={filters.endDate || ""}
-                                onChange={(e) =>
-                                    setFilters({ ...filters, endDate: e.target.value })
-                                }
-                                className="mt-1"
-                            />
-                        </div>
+                        </PopoverContent>
+                    </Popover>
+                    <div className="flex gap-2">
+                        <Button
+                            variant={isAllTime ? "default" : "secondary"}
+                            onClick={handleAllTime}
+                            size="sm"
+                            className="flex-1"
+                        >
+                            All Time
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleResetDate}
+                            size="sm"
+                            className="flex-1"
+                        >
+                            Reset
+                        </Button>
                     </div>
                 </div>
 

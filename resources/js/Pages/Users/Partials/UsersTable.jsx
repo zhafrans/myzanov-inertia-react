@@ -166,7 +166,7 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
     return (
         <>
             {/* FILTER BAR */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-card rounded-lg border">
+            <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-card rounded-lg border -mx-6 md:mx-0 px-6 md:px-4">
                 <div className="flex-1">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -224,8 +224,8 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                 </div>
             </div>
 
-            {/* TABLE */}
-            <div className="relative border rounded-lg overflow-hidden">
+            {/* TABLE - Desktop */}
+            <div className="hidden md:block relative border rounded-lg overflow-hidden">
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
                         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
@@ -358,51 +358,185 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                 </Table>
             </div>
 
+            {/* MOBILE CARD VIEW */}
+            <div className="md:hidden space-y-0 overflow-hidden -mx-6">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    </div>
+                )}
+                {users.data.length > 0 ? (
+                    users.data.map((user) => (
+                        <div
+                            key={user.id}
+                            className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3"
+                        >
+                            {/* Avatar & Name */}
+                            <div className="flex items-center gap-3 mb-2">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarFallback className="bg-primary/10 text-primary">
+                                        {user.name[0].toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate">
+                                        {user.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">
+                                        {user.email}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Phone & Role */}
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        Telepon
+                                    </p>
+                                    <p className="text-xs font-medium">
+                                        {user.phone || "-"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        Role
+                                    </p>
+                                    <Badge
+                                        variant="outline"
+                                        className="text-xs capitalize"
+                                    >
+                                        {user.role}
+                                    </Badge>
+                                </div>
+                            </div>
+
+                            {/* Status & Actions */}
+                            <div className="flex items-center justify-between pt-2 border-t">
+                                <Badge
+                                    variant={
+                                        user.is_active ? "default" : "secondary"
+                                    }
+                                    className={
+                                        user.is_active
+                                            ? "bg-green-100 text-green-800 hover:bg-green-100"
+                                            : ""
+                                    }
+                                >
+                                    {user.is_active ? "Aktif" : "Nonaktif"}
+                                </Badge>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleEdit(user)}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <Pencil className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        onClick={() => handleDeleteClick(user)}
+                                        disabled={user.id === auth.user.id}
+                                        className="h-8 w-8 p-0"
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="text-center py-8 text-muted-foreground px-6">
+                        Tidak ada data user
+                    </div>
+                )}
+            </div>
+
             {/* PAGINATION */}
             {users.data.length > 0 && (
-                <div className="flex items-center justify-between px-2 py-4">
-                    <div className="text-sm text-muted-foreground">
-                        Menampilkan {users.from} sampai {users.to} dari{" "}
-                        {users.total} data
-                    </div>
-                    <div className="flex gap-2">
-                        {(() => {
-                            // Laravel pagination: first link is previous, last link is next
-                            const prevLink = users.links[0];
-                            const nextLink =
-                                users.links[users.links.length - 1];
+                <>
+                    {/* Desktop Pagination */}
+                    <div className="hidden md:flex items-center justify-between px-2 py-4">
+                        <div className="text-sm text-muted-foreground">
+                            Menampilkan {users.from} sampai {users.to} dari{" "}
+                            {users.total} data
+                        </div>
+                        <div className="flex gap-2">
+                            {(() => {
+                                const prevLink = users.links[0];
+                                const nextLink = users.links[users.links.length - 1];
 
-                            return (
-                                <>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        disabled={!prevLink?.url}
-                                        onClick={() =>
-                                            prevLink?.url &&
-                                            router.get(prevLink.url)
-                                        }
-                                        title="Sebelumnya"
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        disabled={!nextLink?.url}
-                                        onClick={() =>
-                                            nextLink?.url &&
-                                            router.get(nextLink.url)
-                                        }
-                                        title="Selanjutnya"
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </Button>
-                                </>
-                            );
-                        })()}
+                                return (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            disabled={!prevLink?.url}
+                                            onClick={() =>
+                                                prevLink?.url &&
+                                                router.get(prevLink.url)
+                                            }
+                                            title="Sebelumnya"
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            disabled={!nextLink?.url}
+                                            onClick={() =>
+                                                nextLink?.url &&
+                                                router.get(nextLink.url)
+                                            }
+                                            title="Selanjutnya"
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </Button>
+                                    </>
+                                );
+                            })()}
+                        </div>
                     </div>
-                </div>
+
+                    {/* Mobile Pagination */}
+                    <div className="md:hidden flex items-center justify-between gap-4 px-4 py-3 -mx-6 md:mx-0">
+                        <div className="text-xs text-muted-foreground">
+                            {users.from}-{users.to} of {users.total}
+                        </div>
+                        <div className="flex gap-2 flex-1">
+                            {(() => {
+                                const prevLink = users.links[0];
+                                const nextLink = users.links[users.links.length - 1];
+                                return (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => prevLink?.url && router.get(prevLink.url)}
+                                            disabled={!prevLink?.url}
+                                            className="flex-1 text-xs"
+                                        >
+                                            <ChevronLeft className="w-3 h-3 mr-1" />
+                                            Previous
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => nextLink?.url && router.get(nextLink.url)}
+                                            disabled={!nextLink?.url}
+                                            className="flex-1 text-xs"
+                                        >
+                                            Next
+                                            <ChevronRight className="w-3 h-3 ml-1" />
+                                        </Button>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </>
             )}
 
             {/* MODALS */}

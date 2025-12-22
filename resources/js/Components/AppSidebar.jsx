@@ -52,7 +52,7 @@ export default function AppSidebar() {
     return (
         <aside
             className={clsx(
-                "border-r bg-card transition-all duration-300",
+                "hidden md:block border-r bg-card transition-all duration-300",
                 open ? "w-64" : "w-16"
             )}
         >

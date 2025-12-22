@@ -88,7 +88,7 @@ export default function FilterForm({ filters: initialFilters, users, actions, mo
     }
 
     return (
-        <div className="border rounded-lg p-4 space-y-4 relative">
+        <div className="border rounded-lg p-4 space-y-4 relative -mx-6 md:mx-0 px-6 md:px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                 {/* Search */}
                 <div className="space-y-2">
