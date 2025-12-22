@@ -1,38 +1,59 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { ChevronDown } from "lucide-react"
 
-const dummyRanking = [
-    { label: "A551", value: 40 },
-    { label: "A552", value: 30 },
-    { label: "A553", value: 20 },
-]
-
-export default function TopRankingCard({ title }) {
-    const max = Math.max(...dummyRanking.map(i => i.value))
+export default function TopRankingCard({ title, data = [], loading = false, onLoadMore, currentLimit }) {
+    const showLoadMore = onLoadMore && data?.length > 0 && data.length >= currentLimit
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-                {dummyRanking.map((item, i) => (
-                    <div key={i}>
-                        <div className="flex justify-between text-sm">
-                            <span>
-                                #{i + 1} {item.label}
-                            </span>
-                            <span>{item.value}</span>
-                        </div>
-                        <div className="h-2 bg-muted rounded">
-                            <div
-                                className="h-2 bg-primary rounded"
-                                style={{
-                                    width: `${(item.value / max) * 100}%`,
-                                }}
-                            />
-                        </div>
+            <CardContent>
+                {loading ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-8" />
+                        <Skeleton className="h-8" />
+                        <Skeleton className="h-8" />
                     </div>
-                ))}
+                ) : data?.length > 0 ? (
+                    <>
+                        <Table>
+                            <TableBody>
+                                {data.map((item, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell className="font-medium">
+                                            {item.label}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            {item.value}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        {showLoadMore && (
+                            <div className="mt-4 flex justify-center">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={onLoadMore}
+                                    className="flex items-center gap-1"
+                                >
+                                    <ChevronDown className="w-4 h-4" />
+                                    Tampilkan lebih banyak
+                                </Button>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                        Tidak ada data
+                    </div>
+                )}
             </CardContent>
         </Card>
     )

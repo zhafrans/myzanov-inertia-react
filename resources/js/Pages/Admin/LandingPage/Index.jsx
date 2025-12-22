@@ -131,7 +131,7 @@ export default function LandingPageAdmin({ contents }) {
                 </div>
 
                 <Tabs defaultValue="home_hero" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1 md:gap-0">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1 md:gap-0 mb-6 h-auto">
                         <TabsTrigger value="home_hero" className="text-xs md:text-sm">Home Hero</TabsTrigger>
                         <TabsTrigger value="home_about" className="text-xs md:text-sm">Home About</TabsTrigger>
                         <TabsTrigger value="about_content" className="text-xs md:text-sm">

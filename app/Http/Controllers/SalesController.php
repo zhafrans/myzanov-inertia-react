@@ -73,17 +73,35 @@ class SalesController extends Controller
                 });
         }
 
-        // Search
+        // Search - mencari di semua kolom sales table
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('card_number', 'like', "%{$search}%")
-                    ->orWhere('customer_name', 'like', "%{$search}%")
+                $q->where('sales.invoice', 'like', "%{$search}%")
+                    ->orWhere('sales.card_number', 'like', "%{$search}%")
+                    ->orWhere('sales.customer_name', 'like', "%{$search}%")
+                    ->orWhere('sales.phone', 'like', "%{$search}%")
+                    ->orWhere('sales.address', 'like', "%{$search}%")
+                    ->orWhere('sales.payment_type', 'like', "%{$search}%")
+                    ->orWhere('sales.status', 'like', "%{$search}%")
+                    ->orWhere('sales.note', 'like', "%{$search}%")
                     ->orWhereHas('seller', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                        $q->where('name', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
                     })
                     ->orWhereHas('items', function ($q) use ($search) {
-                        $q->where('product_name', 'like', "%{$search}%");
+                        $q->where('product_name', 'like', "%{$search}%")
+                          ->orWhere('color', 'like', "%{$search}%")
+                          ->orWhere('size', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('city', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('subdistrict', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('province', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
                     });
             });
         }
@@ -933,7 +951,8 @@ class SalesController extends Controller
 
         // Jika role != collector, bisa pilih collector (default: semua)
         // Jika role == collector, hanya tampilkan data collector tersebut
-        if ($currentUserRole === 'collector') {
+        // KECUALI jika nama user adalah 'Lukman', dia bisa lihat semua meski role collector
+        if (strcasecmp($currentUserRole, 'collector') === 0 && $currentUser->name !== 'Lukman') {
             $selectedCollectorId = $currentUserId;
             $showAllCollectors = false;
         } else {
@@ -990,34 +1009,63 @@ class SalesController extends Controller
 
         // Filter berdasarkan rentang tanggal (payment_date dari sales_installments)
         // Jika all_time tidak dipilih, gunakan filter date range
+        // Default: bulan ini
         if (!$request->filled('all_time') || !$request->boolean('all_time')) {
-            if ($request->filled('startDate')) {
-                $query->whereDate('sales_installments.payment_date', '>=', $request->startDate);
-            }
-
-            if ($request->filled('endDate')) {
-                $query->whereDate('sales_installments.payment_date', '<=', $request->endDate);
-            }
+            $startDate = $request->input('startDate', now()->startOfMonth()->format('Y-m-d'));
+            $endDate = $request->input('endDate', now()->endOfMonth()->format('Y-m-d'));
+            
+            $query->whereDate('sales_installments.payment_date', '>=', $startDate)
+                  ->whereDate('sales_installments.payment_date', '<=', $endDate);
         }
 
-        // Search (dari sales)
+        // Search (dari sales) - mencari di semua kolom sales table
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('sales.card_number', 'like', "%{$search}%")
+                $q->where('sales.invoice', 'like', "%{$search}%")
+                    ->orWhere('sales.card_number', 'like', "%{$search}%")
                     ->orWhere('sales.customer_name', 'like', "%{$search}%")
-                    ->orWhere('sales.invoice', 'like', "%{$search}%")
+                    ->orWhere('sales.phone', 'like', "%{$search}%")
+                    ->orWhere('sales.address', 'like', "%{$search}%")
+                    ->orWhere('sales.payment_type', 'like', "%{$search}%")
+                    ->orWhere('sales.status', 'like', "%{$search}%")
+                    ->orWhere('sales.note', 'like', "%{$search}%")
                     ->orWhereExists(function ($subQ) use ($search) {
                         $subQ->select(DB::raw(1))
                             ->from('users')
                             ->whereColumn('users.id', 'sales.seller_id')
-                            ->where('users.name', 'like', "%{$search}%");
+                            ->where(function ($q) use ($search) {
+                                $q->where('users.name', 'like', "%{$search}%")
+                                  ->orWhere('users.email', 'like', "%{$search}%");
+                            });
                     })
                     ->orWhereExists(function ($subQ) use ($search) {
                         $subQ->select(DB::raw(1))
                             ->from('sales_items')
                             ->whereColumn('sales_items.sale_id', 'sales.id')
-                            ->where('sales_items.product_name', 'like', "%{$search}%");
+                            ->where(function ($q) use ($search) {
+                                $q->where('sales_items.product_name', 'like', "%{$search}%")
+                                  ->orWhere('sales_items.color', 'like', "%{$search}%")
+                                  ->orWhere('sales_items.size', 'like', "%{$search}%");
+                            });
+                    })
+                    ->orWhereExists(function ($subQ) use ($search) {
+                        $subQ->select(DB::raw(1))
+                            ->from('cities')
+                            ->whereColumn('cities.id', 'sales.city_id')
+                            ->where('cities.name', 'like', "%{$search}%");
+                    })
+                    ->orWhereExists(function ($subQ) use ($search) {
+                        $subQ->select(DB::raw(1))
+                            ->from('subdistricts')
+                            ->whereColumn('subdistricts.id', 'sales.subdistrict_id')
+                            ->where('subdistricts.name', 'like', "%{$search}%");
+                    })
+                    ->orWhereExists(function ($subQ) use ($search) {
+                        $subQ->select(DB::raw(1))
+                            ->from('provinces')
+                            ->whereColumn('provinces.id', 'sales.province_id')
+                            ->where('provinces.name', 'like', "%{$search}%");
                     });
             });
         }
@@ -1080,8 +1128,8 @@ class SalesController extends Controller
                 'status' => $request->status ?? 'all',
                 'payment_type' => $request->payment_type ?? 'all',
                 'search' => $request->search ?? '',
-                'startDate' => $request->startDate ?? '',
-                'endDate' => $request->endDate ?? '',
+                'startDate' => $request->startDate ?? now()->startOfMonth()->format('Y-m-d'),
+                'endDate' => $request->endDate ?? now()->endOfMonth()->format('Y-m-d'),
                 'all_time' => $request->boolean('all_time', false),
                 'collector_id' => $selectedCollectorId,
             ],
@@ -1099,7 +1147,8 @@ class SalesController extends Controller
 
         // Jika role != collector, bisa pilih collector (default: semua)
         // Jika role == collector, hanya tampilkan data collector tersebut
-        if ($currentUserRole === 'collector') {
+        // KECUALI jika nama user adalah 'Lukman', dia bisa lihat semua meski role collector
+        if (strcasecmp($currentUserRole, 'collector') === 0 && $currentUser->name !== 'Lukman') {
             $selectedCollectorId = $currentUserId;
             $showAllCollectors = false;
         } else {
@@ -1196,17 +1245,35 @@ class SalesController extends Controller
             });
         }
 
-        // Search
+        // Search - mencari di semua kolom sales table
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('card_number', 'like', "%{$search}%")
-                    ->orWhere('customer_name', 'like', "%{$search}%")
+                $q->where('sales.invoice', 'like', "%{$search}%")
+                    ->orWhere('sales.card_number', 'like', "%{$search}%")
+                    ->orWhere('sales.customer_name', 'like', "%{$search}%")
+                    ->orWhere('sales.phone', 'like', "%{$search}%")
+                    ->orWhere('sales.address', 'like', "%{$search}%")
+                    ->orWhere('sales.payment_type', 'like', "%{$search}%")
+                    ->orWhere('sales.status', 'like', "%{$search}%")
+                    ->orWhere('sales.note', 'like', "%{$search}%")
                     ->orWhereHas('seller', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
+                        $q->where('name', 'like', "%{$search}%")
+                          ->orWhere('email', 'like', "%{$search}%");
                     })
                     ->orWhereHas('items', function ($q) use ($search) {
-                        $q->where('product_name', 'like', "%{$search}%");
+                        $q->where('product_name', 'like', "%{$search}%")
+                          ->orWhere('color', 'like', "%{$search}%")
+                          ->orWhere('size', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('city', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('subdistrict', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('province', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
                     });
             });
         }

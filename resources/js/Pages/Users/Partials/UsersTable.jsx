@@ -264,7 +264,8 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                             users.data.map((user) => (
                                 <TableRow
                                     key={user.id}
-                                    className="hover:bg-muted/50"
+                                    className="hover:bg-muted/50 cursor-pointer"
+                                    onClick={() => router.visit(route("users.show", user.id))}
                                 >
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -319,7 +320,7 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                                     </TableCell>
 
                                     <TableCell>
-                                        <div className="flex gap-2">
+                                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                             <Button
                                                 size="icon"
                                                 variant="outline"
@@ -369,7 +370,8 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                     users.data.map((user) => (
                         <div
                             key={user.id}
-                            className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3"
+                            className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
+                            onClick={() => router.visit(route("users.show", user.id))}
                         >
                             {/* Avatar & Name */}
                             <div className="flex items-center gap-3 mb-2">
@@ -425,7 +427,7 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                                 >
                                     {user.is_active ? "Aktif" : "Nonaktif"}
                                 </Badge>
-                                <div className="flex gap-2">
+                                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                                     <Button
                                         size="sm"
                                         variant="outline"

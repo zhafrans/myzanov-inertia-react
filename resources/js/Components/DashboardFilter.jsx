@@ -42,10 +42,10 @@ export default function DashboardFilter({ onFilterChange }) {
 
     return (
         <Card className="mb-6">
-            <CardHeader>
+            <CardHeader className="px-6 pb-4">
                 <CardTitle>Filter Dashboard</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6 pt-0 pb-6">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1">
                         <label className="text-sm font-medium mb-1 block">Tahun</label>

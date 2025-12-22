@@ -9,6 +9,8 @@ import {
     Receipt,
     AlertCircle,
     MoreHorizontal,
+    User,
+    LogOut,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -18,13 +20,6 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -86,7 +81,9 @@ export default function MobileBottomNav() {
     // Check if item is active
     const isActive = (href) => {
         if (href === "/collector") {
-            return url.startsWith("/collector") && url !== "/collector/uncollected";
+            return (
+                url.startsWith("/collector") && url !== "/collector/uncollected"
+            );
         }
         if (href === "#") return false;
         return url === href || url.startsWith(href + "/");
@@ -124,22 +121,29 @@ export default function MobileBottomNav() {
                                     onClick={(e) => handleMenuClick(e, item)}
                                     className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors min-w-0"
                                 >
-                                    <Avatar className="w-8 h-8">
-                                        <AvatarFallback className="text-xs">
+                                    <Avatar className="w-6 h-6">
+                                        <AvatarFallback className="text-[10px]">
                                             {user?.name?.[0]?.toUpperCase()}
                                         </AvatarFallback>
                                     </Avatar>
+                                    <span className="text-[10px] font-medium leading-tight text-center px-0.5 truncate w-full">
+                                        {user?.name?.split(" ")[0]}
+                                    </span>
                                 </button>
                             );
                         }
 
                         if (item.isSheet) {
                             // Check if any submenu item is active for highlighting
-                            const isSubmenuActive = item.label === "Collector" 
-                                ? url.startsWith("/collector")
-                                : item.label === "Misc"
-                                ? url.startsWith("/users") || url.startsWith("/products") || url.startsWith("/landing-page") || url.startsWith("/activity-logs")
-                                : false;
+                            const isSubmenuActive =
+                                item.label === "Collector"
+                                    ? url.startsWith("/collector")
+                                    : item.label === "Misc"
+                                    ? url.startsWith("/users") ||
+                                      url.startsWith("/products") ||
+                                      url.startsWith("/landing-page") ||
+                                      url.startsWith("/activity-logs")
+                                    : false;
 
                             return (
                                 <button
@@ -152,10 +156,12 @@ export default function MobileBottomNav() {
                                             : "text-muted-foreground hover:text-foreground"
                                     )}
                                 >
-                                    <Icon className={clsx(
-                                        "w-5 h-5",
-                                        isSubmenuActive && "scale-110"
-                                    )} />
+                                    <Icon
+                                        className={clsx(
+                                            "w-5 h-5",
+                                            isSubmenuActive && "scale-110"
+                                        )}
+                                    />
                                     <span className="text-[10px] font-medium leading-tight text-center px-0.5">
                                         {shortLabel}
                                     </span>
@@ -174,10 +180,12 @@ export default function MobileBottomNav() {
                                         : "text-muted-foreground hover:text-foreground"
                                 )}
                             >
-                                <Icon className={clsx(
-                                    "w-5 h-5",
-                                    active && "scale-110"
-                                )} />
+                                <Icon
+                                    className={clsx(
+                                        "w-5 h-5",
+                                        active && "scale-110"
+                                    )}
+                                />
                                 <span className="text-[10px] font-medium leading-tight text-center px-0.5">
                                     {shortLabel}
                                 </span>
@@ -189,7 +197,10 @@ export default function MobileBottomNav() {
 
             {/* Collector Submenu Sheet (Slide from bottom) */}
             <Sheet open={collectorMenuOpen} onOpenChange={setCollectorMenuOpen}>
-                <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-xl">
+                <SheetContent
+                    side="bottom"
+                    className="h-auto max-h-[80vh] rounded-t-xl"
+                >
                     <SheetHeader>
                         <SheetTitle>Menu Collector</SheetTitle>
                     </SheetHeader>
@@ -197,7 +208,7 @@ export default function MobileBottomNav() {
                         {collectorSubmenu.map((item) => {
                             const Icon = item.icon;
                             const active = isActive(item.href);
-                            
+
                             return (
                                 <Link
                                     key={item.href}
@@ -211,7 +222,9 @@ export default function MobileBottomNav() {
                                     )}
                                 >
                                     <Icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.label}</span>
+                                    <span className="font-medium">
+                                        {item.label}
+                                    </span>
                                 </Link>
                             );
                         })}
@@ -221,7 +234,10 @@ export default function MobileBottomNav() {
 
             {/* Miscellaneous Submenu Sheet (Slide from bottom) */}
             <Sheet open={miscMenuOpen} onOpenChange={setMiscMenuOpen}>
-                <SheetContent side="bottom" className="h-auto max-h-[80vh] rounded-t-xl">
+                <SheetContent
+                    side="bottom"
+                    className="h-auto max-h-[80vh] rounded-t-xl"
+                >
                     <SheetHeader>
                         <SheetTitle>Miscellaneous</SheetTitle>
                     </SheetHeader>
@@ -229,7 +245,7 @@ export default function MobileBottomNav() {
                         {miscSubmenu.map((item) => {
                             const Icon = item.icon;
                             const active = isActive(item.href);
-                            
+
                             return (
                                 <Link
                                     key={item.href}
@@ -243,7 +259,9 @@ export default function MobileBottomNav() {
                                     )}
                                 >
                                     <Icon className="w-5 h-5" />
-                                    <span className="font-medium">{item.label}</span>
+                                    <span className="font-medium">
+                                        {item.label}
+                                    </span>
                                 </Link>
                             );
                         })}
@@ -251,48 +269,68 @@ export default function MobileBottomNav() {
                 </SheetContent>
             </Sheet>
 
-            {/* Profile Dialog for Mobile */}
-            <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Profile</DialogTitle>
-                        <DialogDescription>
-                            Informasi akun Anda
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Profile Sheet (Slide from bottom) */}
+            <Sheet open={profileOpen} onOpenChange={setProfileOpen}>
+                <SheetContent
+                    side="bottom"
+                    className="h-auto max-h-[80vh] rounded-t-xl"
+                >
+                    <SheetHeader>
+                        <SheetTitle>Profile</SheetTitle>
+                    </SheetHeader>
+                    <div className="space-y-4 py-4">
+                        {/* User Info */}
+                        <div className="flex flex-col items-center py-4 space-y-3">
+                            <Avatar className="w-20 h-20">
+                                <AvatarFallback className="text-2xl">
+                                    {user?.name?.[0]?.toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
 
-                    <div className="flex flex-col items-center py-4 space-y-4">
-                        <Avatar className="w-20 h-20">
-                            <AvatarFallback className="text-2xl">
-                                {user?.name?.[0]?.toUpperCase()}
-                            </AvatarFallback>
-                        </Avatar>
-
-                        <div className="text-center space-y-1">
-                            <p className="text-lg font-semibold">{user?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                                {user?.email}
-                            </p>
-                            {user?.role && (
-                                <p className="text-xs text-muted-foreground">
-                                    {user.role}
+                            <div className="text-center space-y-1">
+                                <p className="text-lg font-semibold">
+                                    {user?.name}
                                 </p>
-                            )}
+                                <p className="text-sm text-muted-foreground">
+                                    {user?.email}
+                                </p>
+                                {user?.role && (
+                                    <p className="text-xs text-muted-foreground capitalize">
+                                        {user.role}
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         <Separator />
 
-                        <Button
-                            variant="destructive"
-                            className="w-full"
-                            onClick={handleLogout}
-                        >
-                            Logout
-                        </Button>
+                        {/* Menu Items */}
+                        <div className="space-y-2">
+                            <Link
+                                href={route("users.show", user?.id)}
+                                onClick={() => setProfileOpen(false)}
+                                className="flex items-center gap-3 p-4 rounded-lg transition-colors hover:bg-muted"
+                            >
+                                <User className="w-5 h-5" />
+                                <span className="font-medium">
+                                    Lihat Profil
+                                </span>
+                            </Link>
+
+                            <button
+                                onClick={() => {
+                                    setProfileOpen(false);
+                                    handleLogout();
+                                }}
+                                className="flex items-center gap-3 p-4 rounded-lg transition-colors hover:bg-muted text-red-600 w-full text-left"
+                            >
+                                <LogOut className="w-5 h-5" />
+                                <span className="font-medium">Logout</span>
+                            </button>
+                        </div>
                     </div>
-                </DialogContent>
-            </Dialog>
+                </SheetContent>
+            </Sheet>
         </>
     );
 }
-

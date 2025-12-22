@@ -1,30 +1,24 @@
-const data = {
-    totalProduct: 120,
-    lunas: { count: 80, amount: 12000000 },
-    belumLunas: { count: 40, amount: 5000000 },
-}
+export default function PerformanceSummary({ performance }) {
+    if (!performance) return null;
 
-export default function PerformanceSummary() {
-    const totalCard = data.lunas.count + data.belumLunas.count
+    const totalCard = performance.lunas.count + performance.belumLunas.count
 
     const percent = v =>
-        ((v / totalCard) * 100).toFixed(1)
+        totalCard > 0 ? ((v / totalCard) * 100).toFixed(1) : 0
 
     return (
         <div className="grid md:grid-cols-3 gap-4 text-sm">
-            <Summary label="Produk Terjual" value={data.totalProduct} />
+            <Summary label="Produk Terjual" value={performance.totalProduct || 0} />
 
             <Summary
                 label="Kartu Lunas"
-                value={`${data.lunas.count} (${percent(data.lunas.count)}%)`}
-                sub={`Rp ${data.lunas.amount.toLocaleString()}`}
+                value={`${performance.lunas.count} (${percent(performance.lunas.count)}%)`}
                 success
             />
 
             <Summary
                 label="Belum Lunas"
-                value={`${data.belumLunas.count} (${percent(data.belumLunas.count)}%)`}
-                sub={`Rp ${data.belumLunas.amount.toLocaleString()}`}
+                value={`${performance.belumLunas.count} (${percent(performance.belumLunas.count)}%)`}
                 danger
             />
         </div>

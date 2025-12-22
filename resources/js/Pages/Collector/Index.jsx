@@ -182,7 +182,11 @@ export default function CollectorIndex() {
     const paymentTypeChartSeries = chartData?.byPaymentType?.values || [];
 
     // Show collector filter only if current user role is not collector
-    const showCollectorFilter = currentUserRole !== "collector";
+    // Kecuali user bernama Lukman, dia bisa lihat filter
+    const { auth } = usePage().props;
+    const showCollectorFilter =
+        currentUserRole?.toLowerCase() !== "collector" ||
+        auth?.user?.name === "Lukman";
 
     return (
         <CollectorLayout title="Riwayat Tagihan - Collector">
@@ -261,10 +265,18 @@ export default function CollectorIndex() {
                                                 Rata-rata per hari
                                             </p>
                                             <p className="text-3xl font-bold mt-2">
-                                                {chartData?.averageCount?.average?.toFixed(2) || "0"}
+                                                {chartData?.averageCount?.average?.toFixed(
+                                                    2
+                                                ) || "0"}
                                             </p>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                dari {Math.floor(chartData?.averageCount?.days_with_installments || 0)} hari yang memiliki tagihan
+                                                dari{" "}
+                                                {Math.floor(
+                                                    chartData?.averageCount
+                                                        ?.days_with_installments ||
+                                                        0
+                                                )}{" "}
+                                                hari yang memiliki tagihan
                                             </p>
                                         </div>
                                         <div className="text-right">
@@ -272,10 +284,16 @@ export default function CollectorIndex() {
                                                 Total tagihan
                                             </p>
                                             <p className="text-2xl font-semibold mt-2">
-                                                {chartData?.averageCount?.total || 0}
+                                                {chartData?.averageCount
+                                                    ?.total || 0}
                                             </p>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                                dalam {Math.floor(chartData?.averageCount?.days || 0)} hari
+                                                dalam{" "}
+                                                {Math.floor(
+                                                    chartData?.averageCount
+                                                        ?.days || 0
+                                                )}{" "}
+                                                hari
                                             </p>
                                         </div>
                                     </div>
@@ -285,7 +303,10 @@ export default function CollectorIndex() {
                                                 Total Nominal
                                             </p>
                                             <p className="text-xl font-bold">
-                                                {formatCurrency(chartData?.averageCount?.total_amount || 0)}
+                                                {formatCurrency(
+                                                    chartData?.averageCount
+                                                        ?.total_amount || 0
+                                                )}
                                             </p>
                                         </div>
                                     </div>
@@ -300,7 +321,8 @@ export default function CollectorIndex() {
                                     <CardTitle>Tagihan Per Periode</CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    {chartData?.monthlyData?.values?.length > 0 ? (
+                                    {chartData?.monthlyData?.values?.length >
+                                    0 ? (
                                         <Chart
                                             type="line"
                                             height={300}
@@ -394,7 +416,8 @@ export default function CollectorIndex() {
                                                 }
                                             >
                                                 <TableCell>
-                                                    {installment.card_number || installment.invoice}
+                                                    {installment.card_number ||
+                                                        installment.invoice}
                                                 </TableCell>
                                                 <TableCell>
                                                     {installment.customer_name}
@@ -411,10 +434,14 @@ export default function CollectorIndex() {
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
-                                                    {formatDate(installment.date)}
+                                                    {formatDate(
+                                                        installment.date
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {formatCurrency(installment.price)}
+                                                    {formatCurrency(
+                                                        installment.price
+                                                    )}
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatCurrency(
@@ -472,7 +499,8 @@ export default function CollectorIndex() {
                                                                 : "bg-yellow-100 text-yellow-800"
                                                         }`}
                                                     >
-                                                        {installment.status === "paid"
+                                                        {installment.status ===
+                                                        "paid"
                                                             ? "Lunas"
                                                             : "Belum Lunas"}
                                                     </span>
@@ -501,7 +529,10 @@ export default function CollectorIndex() {
                                         key={installment.id}
                                         onClick={() =>
                                             router.visit(
-                                                route("sales.show", installment.sale_id)
+                                                route(
+                                                    "sales.show",
+                                                    installment.sale_id
+                                                )
                                             )
                                         }
                                         className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
@@ -512,7 +543,9 @@ export default function CollectorIndex() {
                                                 Card No
                                             </p>
                                             <p className="text-sm font-semibold">
-                                                {installment.card_number || installment.invoice || "-"}
+                                                {installment.card_number ||
+                                                    installment.invoice ||
+                                                    "-"}
                                             </p>
                                         </div>
 
@@ -522,7 +555,8 @@ export default function CollectorIndex() {
                                                 Customer
                                             </p>
                                             <p className="text-sm font-medium">
-                                                {installment.customer_name || "-"}
+                                                {installment.customer_name ||
+                                                    "-"}
                                             </p>
                                         </div>
 
@@ -542,7 +576,8 @@ export default function CollectorIndex() {
                                                 </p>
                                                 <p className="text-xs font-medium">
                                                     {installment.product || "-"}
-                                                    {installment.color && ` - ${installment.color}`}
+                                                    {installment.color &&
+                                                        ` - ${installment.color}`}
                                                 </p>
                                             </div>
                                         </div>
@@ -564,7 +599,9 @@ export default function CollectorIndex() {
                                                     Jumlah Tagihan
                                                 </p>
                                                 <p className="text-xs font-semibold">
-                                                    {formatCurrency(installment.installment_amount)}
+                                                    {formatCurrency(
+                                                        installment.installment_amount
+                                                    )}
                                                 </p>
                                             </div>
                                             <div>
@@ -573,12 +610,15 @@ export default function CollectorIndex() {
                                                 </p>
                                                 <p
                                                     className={`text-xs font-bold ${
-                                                        installment.remaining > 0
+                                                        installment.remaining >
+                                                        0
                                                             ? "text-red-600"
                                                             : "text-green-600"
                                                     }`}
                                                 >
-                                                    {formatCurrency(installment.remaining)}
+                                                    {formatCurrency(
+                                                        installment.remaining
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
@@ -590,7 +630,8 @@ export default function CollectorIndex() {
                                                     Penagih
                                                 </p>
                                                 <p className="text-xs font-medium">
-                                                    {installment.collector_name || "-"}
+                                                    {installment.collector_name ||
+                                                        "-"}
                                                 </p>
                                             </div>
                                             <div>
@@ -599,12 +640,14 @@ export default function CollectorIndex() {
                                                 </p>
                                                 <span
                                                     className={`inline-block px-2 py-0.5 rounded text-xs ${
-                                                        installment.status === "paid"
+                                                        installment.status ===
+                                                        "paid"
                                                             ? "bg-green-100 text-green-800"
                                                             : "bg-yellow-100 text-yellow-800"
                                                     }`}
                                                 >
-                                                    {installment.status === "paid"
+                                                    {installment.status ===
+                                                    "paid"
                                                         ? "Lunas"
                                                         : "Belum Lunas"}
                                                 </span>

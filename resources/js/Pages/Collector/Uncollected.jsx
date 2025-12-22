@@ -100,7 +100,11 @@ export default function CollectorUncollected() {
     };
 
     // Show collector filter only if current user role is not collector
-    const showCollectorFilter = currentUserRole !== "collector";
+    // Kecuali user bernama Lukman, dia bisa lihat filter
+    const { auth } = usePage().props;
+    const showCollectorFilter =
+        currentUserRole?.toLowerCase() !== "collector" ||
+        auth?.user?.name === "Lukman";
 
     return (
         <CollectorLayout title="Belum Tertagih Bulan Ini - Collector">
@@ -205,7 +209,8 @@ export default function CollectorUncollected() {
                                                 }
                                             >
                                                 <TableCell>
-                                                    {sale.card_number || sale.invoice}
+                                                    {sale.card_number ||
+                                                        sale.invoice}
                                                 </TableCell>
                                                 <TableCell>
                                                     {sale.customer_name}
@@ -285,7 +290,9 @@ export default function CollectorUncollected() {
                                     <div
                                         key={sale.id}
                                         onClick={() =>
-                                            router.visit(route("sales.show", sale.id))
+                                            router.visit(
+                                                route("sales.show", sale.id)
+                                            )
                                         }
                                         className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
                                     >
@@ -295,7 +302,9 @@ export default function CollectorUncollected() {
                                                 Card No
                                             </p>
                                             <p className="text-sm font-semibold">
-                                                {sale.card_number || sale.invoice || "-"}
+                                                {sale.card_number ||
+                                                    sale.invoice ||
+                                                    "-"}
                                             </p>
                                         </div>
 
@@ -325,7 +334,8 @@ export default function CollectorUncollected() {
                                                 </p>
                                                 <p className="text-xs font-medium">
                                                     {sale.product || "-"}
-                                                    {sale.color && ` - ${sale.color}`}
+                                                    {sale.color &&
+                                                        ` - ${sale.color}`}
                                                 </p>
                                             </div>
                                         </div>
@@ -364,7 +374,9 @@ export default function CollectorUncollected() {
                                                         Terakhir Ditagih
                                                     </p>
                                                     <p className="text-xs font-medium">
-                                                        {formatDate(sale.last_collected_at)}
+                                                        {formatDate(
+                                                            sale.last_collected_at
+                                                        )}
                                                     </p>
                                                 </div>
                                                 <div>
@@ -372,11 +384,16 @@ export default function CollectorUncollected() {
                                                         Jumlah Terakhir
                                                     </p>
                                                     <p className="text-xs font-semibold">
-                                                        {formatCurrency(sale.last_installment_amount)}
+                                                        {formatCurrency(
+                                                            sale.last_installment_amount
+                                                        )}
                                                     </p>
                                                     {sale.last_collector_name && (
                                                         <p className="text-xs text-muted-foreground mt-0.5">
-                                                            by {sale.last_collector_name}
+                                                            by{" "}
+                                                            {
+                                                                sale.last_collector_name
+                                                            }
                                                         </p>
                                                     )}
                                                 </div>
@@ -384,16 +401,19 @@ export default function CollectorUncollected() {
                                         )}
 
                                         {/* Collector (jika showAllCollectors) */}
-                                        {showAllCollectors && sale.last_collector_name && (
-                                            <div className="pt-2 border-t">
-                                                <p className="text-xs text-muted-foreground mb-0.5">
-                                                    Collector
-                                                </p>
-                                                <p className="text-xs font-medium">
-                                                    {sale.last_collector_name}
-                                                </p>
-                                            </div>
-                                        )}
+                                        {showAllCollectors &&
+                                            sale.last_collector_name && (
+                                                <div className="pt-2 border-t">
+                                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                                        Collector
+                                                    </p>
+                                                    <p className="text-xs font-medium">
+                                                        {
+                                                            sale.last_collector_name
+                                                        }
+                                                    </p>
+                                                </div>
+                                            )}
                                     </div>
                                 ))
                             ) : (

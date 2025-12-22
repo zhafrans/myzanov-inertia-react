@@ -250,6 +250,7 @@ export default function SalesTable() {
     const [debouncedSearch, setDebouncedSearch] = useState(
         initialFilters.search || ""
     );
+    const [loading, setLoading] = useState(false);
 
     // DEBOUNCE SEARCH
     useEffect(() => {
@@ -274,9 +275,11 @@ export default function SalesTable() {
             search: debouncedSearch,
         };
 
+        setLoading(true);
         router.get(route("sales.index"), params, {
             preserveState: true,
             replace: true,
+            onFinish: () => setLoading(false),
         });
     }, [filters, debouncedSearch]);
 
@@ -327,7 +330,12 @@ export default function SalesTable() {
             </div>
 
             {/* TABLE - Desktop */}
-            <div className="hidden md:block border rounded-lg overflow-x-auto">
+            <div className="hidden md:block border rounded-lg overflow-x-auto relative">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    </div>
+                )}
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -357,7 +365,12 @@ export default function SalesTable() {
             </div>
 
             {/* MOBILE LIST VIEW */}
-            <div className="md:hidden space-y-0 overflow-hidden -mx-6 md:mx-0">
+            <div className="md:hidden space-y-0 overflow-hidden -mx-6 md:mx-0 relative">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    </div>
+                )}
                 {sales.data && sales.data.length > 0 ? (
                     sales.data.map((item) => (
                         <SalesMobileCard

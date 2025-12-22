@@ -70,9 +70,9 @@ export default function DashboardFilter({ onFilterChange }) {
             <CardHeader>
                 <CardTitle>Filter Dashboard</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-6">
                 <div className="flex flex-col sm:flex-row gap-4 items-end">
-                    <div className="flex-1">
+                    <div className="flex-1 w-full sm:w-auto">
                         <label className="text-sm font-medium mb-1 block">
                             Rentang Tanggal
                         </label>

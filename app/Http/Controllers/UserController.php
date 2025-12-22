@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Models\Sales;
+use App\Models\SalesItem;
+use App\Models\SalesOutstanding;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
 
 class UserController extends Controller
@@ -207,10 +211,205 @@ class UserController extends Controller
             ->with('success', 'User berhasil dihapus');
     }
 
-    public function show(User $user)
+    public function show(Request $request, User $user)
     {
+        // Get date range filter (default: bulan ini)
+        $allTime = $request->boolean('all_time');
+        
+        if ($allTime) {
+            $startDate = null;
+            $endDate = null;
+        } else {
+            // Default: bulan ini
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+            
+            // Jika tidak ada input, gunakan bulan ini
+            if (!$startDate || !$endDate) {
+                $now = now();
+                $startDate = $now->copy()->startOfMonth()->format('Y-m-d');
+                $endDate = $now->copy()->endOfMonth()->format('Y-m-d');
+            }
+        }
+
+        // Base query for sales by this seller
+        $salesQuery = Sales::where('seller_id', $user->id);
+
+        if (!$allTime && $startDate && $endDate) {
+            $salesQuery->whereBetween('transaction_at', [$startDate, $endDate]);
+        }
+
+        $salesIds = $salesQuery->pluck('id');
+
+        // If no sales found, return empty performance data
+        if ($salesIds->isEmpty()) {
+            return Inertia::render('Users/Show', [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'created_at' => $user->created_at?->format('Y-m-d'),
+                ],
+                'performance' => [
+                    'totalProduct' => 0,
+                    'lunas' => [
+                        'count' => 0,
+                        'amount' => 0,
+                    ],
+                    'belumLunas' => [
+                        'count' => 0,
+                        'amount' => 0,
+                    ],
+                    'topProducts' => [],
+                    'topSizes' => [],
+                    'topCities' => [],
+                    'topSubdistricts' => [],
+                ],
+                'filters' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                ]
+            ]);
+        }
+
+        // Calculate total products sold (sum of quantity from sales_items)
+        $totalProducts = SalesItem::whereIn('sale_id', $salesIds)
+            ->sum('quantity');
+
+        // Calculate lunas (paid) and belum lunas (unpaid) statistics
+        $lunasSales = Sales::whereIn('id', $salesIds)
+            ->whereHas('outstanding', function ($query) {
+                $query->where('outstanding_amount', '<=', 0);
+            })
+            ->get();
+
+        $belumLunasSales = Sales::whereIn('id', $salesIds)
+            ->whereHas('outstanding', function ($query) {
+                $query->where('outstanding_amount', '>', 0);
+            })
+            ->get();
+
+        $lunasCount = $lunasSales->count();
+        $lunasAmount = $lunasSales->sum('price');
+
+        $belumLunasCount = $belumLunasSales->count();
+        $belumLunasAmount = $belumLunasSales->sum('price');
+
+        // Get limit parameters (default 5)
+        $topProductLimit = (int) $request->input('top_product_limit', 5);
+        $topSizeLimit = (int) $request->input('top_size_limit', 5);
+        $topCityLimit = (int) $request->input('top_city_limit', 5);
+        $topSubdistrictLimit = (int) $request->input('top_subdistrict_limit', 5);
+
+        // Get top products
+        $topProducts = SalesItem::select(
+            'sales_items.product_name as name',
+            DB::raw('SUM(sales_items.quantity) as total')
+        )
+            ->whereIn('sale_id', $salesIds)
+            ->groupBy('sales_items.product_name')
+            ->orderByDesc('total')
+            ->limit($topProductLimit)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->name,
+                    'value' => (int) $item->total
+                ];
+            })
+            ->toArray();
+
+        // Get top sizes
+        $topSizes = SalesItem::select(
+            'sales_items.size as name',
+            DB::raw('SUM(sales_items.quantity) as total')
+        )
+            ->whereIn('sale_id', $salesIds)
+            ->whereNotNull('sales_items.size')
+            ->where('sales_items.size', '!=', '')
+            ->groupBy('sales_items.size')
+            ->orderByDesc('total')
+            ->limit($topSizeLimit)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->name,
+                    'value' => (int) $item->total
+                ];
+            })
+            ->toArray();
+
+        // Get top cities
+        $topCities = Sales::select(
+            'cities.name',
+            DB::raw('COUNT(sales.id) as total')
+        )
+            ->whereIn('sales.id', $salesIds)
+            ->join('cities', 'sales.city_id', '=', 'cities.id')
+            ->whereNotNull('city_id')
+            ->groupBy('cities.id', 'cities.name')
+            ->orderByDesc('total')
+            ->limit($topCityLimit)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->name,
+                    'value' => (int) $item->total
+                ];
+            })
+            ->toArray();
+
+        // Get top subdistricts
+        $topSubdistricts = Sales::select(
+            'subdistricts.name',
+            DB::raw('COUNT(sales.id) as total')
+        )
+            ->whereIn('sales.id', $salesIds)
+            ->join('subdistricts', 'sales.subdistrict_id', '=', 'subdistricts.id')
+            ->whereNotNull('subdistrict_id')
+            ->groupBy('subdistricts.id', 'subdistricts.name')
+            ->orderByDesc('total')
+            ->limit($topSubdistrictLimit)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'label' => $item->name,
+                    'value' => (int) $item->total
+                ];
+            })
+            ->toArray();
+
         return Inertia::render('Users/Show', [
-            'user' => $user
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'created_at' => $user->created_at?->format('Y-m-d'),
+            ],
+            'performance' => [
+                'totalProduct' => (int) $totalProducts,
+                'lunas' => [
+                    'count' => $lunasCount,
+                    'amount' => (float) $lunasAmount,
+                ],
+                'belumLunas' => [
+                    'count' => $belumLunasCount,
+                    'amount' => (float) $belumLunasAmount,
+                ],
+                'topProducts' => $topProducts,
+                'topSizes' => $topSizes,
+                'topCities' => $topCities,
+                'topSubdistricts' => $topSubdistricts,
+            ],
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'all_time' => $allTime,
+            ]
         ]);
     }
 }
