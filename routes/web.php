@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\SettingsController;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -25,11 +26,16 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Settings routes
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+
     Route::get(
         '/dashboard',
         fn() =>
         Inertia::render('Dashboard/Index')
-    )->name('dashboard.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    )->name('dashboard.index');
 
     // User Management - Only Super Admin and Admin
     Route::get('/users', [UserController::class, 'index'])
