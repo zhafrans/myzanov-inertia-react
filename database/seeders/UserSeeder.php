@@ -41,7 +41,7 @@ class UserSeeder extends Seeder
 
         // ================= SALES =================
         $sales = ['umi', 'ati', 'into', 'nisya', 'resti', 'sri', 'ika', 'winda'];
-        $inactiveSales = ['ati', 'into', 'resti'];
+        $inactiveSales = ['ati', 'into', 'resti', 'winda'];
 
         foreach ($sales as $name) {
             User::create([
