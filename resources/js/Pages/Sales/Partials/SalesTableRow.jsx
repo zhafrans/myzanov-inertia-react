@@ -1,6 +1,6 @@
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, FilePlus, Trash2 } from "lucide-react";
+import { Pencil, FilePlus, Trash2, Clock } from "lucide-react";
 import { useState } from "react";
 import { router, usePage } from "@inertiajs/react";
 import { toast } from "react-toastify";
@@ -63,6 +63,43 @@ export default function SalesTableRow({ item, collectors }) {
             month: "2-digit",
             year: "numeric",
         });
+    };
+
+    const calculateDaysUntilDue = (tempoAt) => {
+        if (!tempoAt) return null;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const dueDate = new Date(tempoAt);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays;
+    };
+
+    const getTempoDisplay = (tempoAt) => {
+        if (!tempoAt) return { date: "-", daysText: null, isOverdue: false };
+        
+        const daysUntil = calculateDaysUntilDue(tempoAt);
+        const isOverdue = daysUntil < 0;
+        
+        let daysText = null;
+        if (daysUntil > 0) {
+            daysText = `${daysUntil} hari lagi`;
+        } else if (daysUntil < 0) {
+            daysText = `${Math.abs(daysUntil)} hari yang lalu`;
+        } else {
+            daysText = "Hari ini";
+        }
+        
+        return {
+            date: formatDate(tempoAt),
+            daysText,
+            isOverdue,
+        };
     };
 
     return (
@@ -143,6 +180,43 @@ export default function SalesTableRow({ item, collectors }) {
                     ) : (
                         <span className="text-muted-foreground">-</span>
                     )}
+                </TableCell>
+                <TableCell>
+                    {(() => {
+                        const tempo = getTempoDisplay(item.tempo_at);
+                        if (!item.tempo_at) {
+                            return <span className="text-muted-foreground">-</span>;
+                        }
+                        return (
+                            <div className="flex flex-col">
+                                <div className="flex items-center gap-1.5">
+                                    {tempo.isOverdue && (
+                                        <Clock className="w-4 h-4 text-red-600" />
+                                    )}
+                                    <span
+                                        className={`font-medium ${
+                                            tempo.isOverdue
+                                                ? "text-red-600"
+                                                : "text-foreground"
+                                        }`}
+                                    >
+                                        {tempo.date}
+                                    </span>
+                                </div>
+                                {tempo.daysText && (
+                                    <span
+                                        className={`text-xs ${
+                                            tempo.isOverdue
+                                                ? "text-red-600"
+                                                : "text-muted-foreground"
+                                        }`}
+                                    >
+                                        {tempo.daysText}
+                                    </span>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </TableCell>
 
                 {/* Actions */}
