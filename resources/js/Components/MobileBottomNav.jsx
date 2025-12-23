@@ -12,6 +12,7 @@ import {
     User,
     LogOut,
     MessageCircle,
+    Settings,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -21,7 +22,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from "@/components/ui/sheet";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 
 export default function MobileBottomNav() {
@@ -242,6 +243,12 @@ export default function MobileBottomNav() {
                                     className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors min-w-0"
                                 >
                                     <Avatar className="w-6 h-6">
+                                        {user?.profile_image_url && (
+                                            <AvatarImage
+                                                src={user.profile_image_url}
+                                                alt={user?.name}
+                                            />
+                                        )}
                                         <AvatarFallback className="text-[10px]">
                                             {user?.name?.[0]?.toUpperCase()}
                                         </AvatarFallback>
@@ -406,6 +413,12 @@ export default function MobileBottomNav() {
                         {/* User Info */}
                         <div className="flex flex-col items-center py-4 space-y-3">
                             <Avatar className="w-20 h-20">
+                                {user?.profile_image_url && (
+                                    <AvatarImage
+                                        src={user.profile_image_url}
+                                        alt={user?.name}
+                                    />
+                                )}
                                 <AvatarFallback className="text-2xl">
                                     {user?.name?.[0]?.toUpperCase()}
                                 </AvatarFallback>
@@ -439,6 +452,15 @@ export default function MobileBottomNav() {
                                 <span className="font-medium">
                                     Lihat Profil
                                 </span>
+                            </Link>
+
+                            <Link
+                                href={route("profile.edit")}
+                                onClick={() => setProfileOpen(false)}
+                                className="flex items-center gap-3 p-4 rounded-lg transition-colors hover:bg-muted"
+                            >
+                                <Settings className="w-5 h-5" />
+                                <span className="font-medium">Pengaturan</span>
                             </Link>
 
                             <button

@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Models\ActivityLog;
 use App\Models\User;
 use App\Models\Sales;
 use App\Models\SalesItem;
 use App\Models\SalesOutstanding;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
 
 class UserController extends Controller
@@ -46,6 +49,15 @@ class UserController extends Controller
 
         $users = $query->paginate(10)->withQueryString();
 
+        // Add profile_image_url to each user
+        $users->getCollection()->transform(function ($user) {
+            $userArray = $user->toArray();
+            if ($user->profile_image) {
+                $userArray['profile_image_url'] = Storage::url($user->profile_image);
+            }
+            return $userArray;
+        });
+
         return Inertia::render('Users/Index', [
             'users' => $users,
             'filters' => $request->only(['search', 'role', 'is_active']),
@@ -61,7 +73,7 @@ class UserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'address' => 'nullable|string|max:500',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:admin,sales,collector,user',
+            'role' => ['required', Rule::in(array_column(UserRole::cases(), 'value'))],
             'is_active' => 'boolean'
         ]);
 
@@ -91,28 +103,78 @@ class UserController extends Controller
             ->with('success', 'User berhasil ditambahkan');
     }
 
+    public function edit(User $user)
+    {
+        // Prepare user data with profile_image_url
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'address' => $user->address,
+            'role' => $user->role,
+            'is_active' => $user->is_active,
+        ];
+        
+        if ($user->profile_image) {
+            $userData['profile_image_url'] = Storage::url($user->profile_image);
+        }
+
+        // Get all available roles from enum
+        $roles = array_map(
+            fn($role) => ['value' => $role->value, 'label' => $role->getName()],
+            UserRole::cases()
+        );
+
+        return response()->json([
+            'user' => $userData,
+            'roles' => $roles,
+        ]);
+    }
+
     public function update(Request $request, User $user)
     {
+        // Get valid role values from enum
+        $validRoles = array_column(UserRole::cases(), 'value');
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'name' => 'nullable|string|max:255',
+            'email' => ['nullable', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'address' => 'nullable|string|max:500',
             'phone' => 'nullable|string|max:20',
-            'role' => 'required|in:admin,sales,collector,user',
+            'role' => ['nullable', Rule::in($validRoles)],
             'is_active' => 'boolean',
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()]
         ]);
 
         $oldValues = $user->toArray();
 
-        $updateData = [
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'address' => $validated['address'] ?? null,
-            'phone' => $validated['phone'] ?? null,
-            'role' => $validated['role'],
-            'is_active' => $validated['is_active'] ?? true,
-        ];
+        $updateData = [];
+
+        // Only update fields that are provided (not null)
+        if (isset($validated['name']) && $validated['name'] !== null) {
+            $updateData['name'] = $validated['name'];
+        }
+        
+        if (isset($validated['email']) && $validated['email'] !== null) {
+            $updateData['email'] = $validated['email'];
+        }
+        
+        if (isset($validated['address'])) {
+            $updateData['address'] = $validated['address'] ?? null;
+        }
+        
+        if (isset($validated['phone'])) {
+            $updateData['phone'] = $validated['phone'] ?? null;
+        }
+        
+        if (isset($validated['role']) && $validated['role'] !== null) {
+            $updateData['role'] = $validated['role'];
+        }
+        
+        if (isset($validated['is_active'])) {
+            $updateData['is_active'] = $validated['is_active'];
+        }
 
         if (!empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);
@@ -241,17 +303,24 @@ class UserController extends Controller
 
         $salesIds = $salesQuery->pluck('id');
 
+        // Prepare user data with profile_image_url
+        $userData = [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role,
+            'created_at' => $user->created_at?->format('Y-m-d'),
+        ];
+        
+        if ($user->profile_image) {
+            $userData['profile_image_url'] = Storage::url($user->profile_image);
+        }
+
         // If no sales found, return empty performance data
         if ($salesIds->isEmpty()) {
             return Inertia::render('Users/Show', [
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'role' => $user->role,
-                    'created_at' => $user->created_at?->format('Y-m-d'),
-                ],
+                'user' => $userData,
                 'performance' => [
                     'totalProduct' => 0,
                     'lunas' => [
@@ -382,14 +451,7 @@ class UserController extends Controller
             ->toArray();
 
         return Inertia::render('Users/Show', [
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'role' => $user->role,
-                'created_at' => $user->created_at?->format('Y-m-d'),
-            ],
+            'user' => $userData,
             'performance' => [
                 'totalProduct' => (int) $totalProducts,
                 'lunas' => [

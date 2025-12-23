@@ -7,9 +7,9 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Menu, User, LogOut } from "lucide-react";
+import { Menu, User, LogOut, Settings } from "lucide-react";
 import { useSidebar } from "@/Contexts/SidebarContext";
 
 export default function AppNavbar({ user }) {
@@ -44,6 +44,12 @@ export default function AppNavbar({ user }) {
                                     Hai! {user?.name}
                                 </span>
                                 <Avatar className="hidden md:flex">
+                                    {user?.profile_image_url && (
+                                        <AvatarImage
+                                            src={user.profile_image_url}
+                                            alt={user?.name}
+                                        />
+                                    )}
                                     <AvatarFallback>
                                         {user?.name?.[0]?.toUpperCase()}
                                     </AvatarFallback>
@@ -75,6 +81,15 @@ export default function AppNavbar({ user }) {
                                 >
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Lihat Profil</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href={route("profile.edit")}
+                                    className="cursor-pointer w-full flex items-center"
+                                >
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    <span>Pengaturan</span>
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem

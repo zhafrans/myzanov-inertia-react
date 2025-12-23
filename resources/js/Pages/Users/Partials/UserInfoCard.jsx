@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export default function UserInfoCard({ user }) {
     if (!user) return null;
@@ -17,6 +17,12 @@ export default function UserInfoCard({ user }) {
         <Card>
             <CardContent className="flex items-center gap-6 py-6">
                 <Avatar className="h-16 w-16">
+                    {user.profile_image_url && (
+                        <AvatarImage
+                            src={user.profile_image_url}
+                            alt={user.name}
+                        />
+                    )}
                     <AvatarFallback className="text-xl">
                         {initials}
                     </AvatarFallback>

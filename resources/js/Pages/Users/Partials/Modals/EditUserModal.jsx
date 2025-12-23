@@ -1,4 +1,4 @@
-import { useForm } from "@inertiajs/react"
+import { useForm, router } from "@inertiajs/react"
 import {
     Dialog,
     DialogContent,
@@ -18,9 +18,14 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import axios from "axios"
 
 export default function EditUserModal({ open, setOpen, user }) {
+    const [userData, setUserData] = useState(null)
+    const [roles, setRoles] = useState([])
+    const [loading, setLoading] = useState(false)
+
     const { data, setData, put, processing, errors, reset } = useForm({
         name: '',
         email: '',
@@ -32,27 +37,52 @@ export default function EditUserModal({ open, setOpen, user }) {
         is_active: true,
     })
 
-    // Update form when user changes
+    // Fetch user data when modal opens
     useEffect(() => {
-        if (user) {
-            setData({
-                name: user.name,
-                email: user.email,
-                password: '',
-                password_confirmation: '',
-                phone: user.phone || '',
-                address: user.address || '',
-                role: user.role,
-                is_active: user.is_active,
-            })
+        if (open && user?.id) {
+            setLoading(true)
+            axios.get(route('users.edit', user.id))
+                .then(response => {
+                    const { user: userData, roles } = response.data
+                    setUserData(userData)
+                    setRoles(roles)
+                    
+                    // Set form data with fetched data
+                    const formData = {
+                        name: userData.name || '',
+                        email: userData.email || '',
+                        password: '',
+                        password_confirmation: '',
+                        phone: userData.phone || '',
+                        address: userData.address || '',
+                        role: userData.role || '',
+                        is_active: userData.is_active ?? true,
+                    }
+                    setData(formData)
+                })
+                .catch(error => {
+                    console.error('Error fetching user data:', error)
+                })
+                .finally(() => {
+                    setLoading(false)
+                })
+        } else if (!open) {
+            // Reset form when modal closes
+            reset()
+            setUserData(null)
+            setRoles([])
         }
-    }, [user])
+    }, [open, user?.id, setData, reset])
 
     const handleSubmit = (e) => {
         e.preventDefault()
+        if (!user?.id) return
+        
         put(route('users.update', user.id), {
             onSuccess: () => {
                 reset()
+                setUserData(null)
+                setRoles([])
                 setOpen(false)
             },
             preserveScroll: true,
@@ -61,6 +91,8 @@ export default function EditUserModal({ open, setOpen, user }) {
 
     const handleClose = () => {
         reset()
+        setUserData(null)
+        setRoles([])
         setOpen(false)
     }
 
@@ -145,21 +177,28 @@ export default function EditUserModal({ open, setOpen, user }) {
 
                         {/* Role */}
                         <div className="space-y-2">
-                            <Label htmlFor="role">Role *</Label>
-                            <Select
-                                value={data.role}
-                                onValueChange={(value) => setData('role', value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih role" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="admin">Admin</SelectItem>
-                                    <SelectItem value="sales">Sales</SelectItem>
-                                    <SelectItem value="collector">Collector</SelectItem>
-                                    <SelectItem value="user">User</SelectItem>
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="role">Role</Label>
+                            {loading ? (
+                                <Input value="Memuat..." disabled />
+                            ) : (
+                                <Select
+                                    key={data.role || 'role-select'}
+                                    value={data.role || undefined}
+                                    onValueChange={(value) => setData('role', value)}
+                                    disabled={roles.length === 0}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Pilih role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {roles.map((role) => (
+                                            <SelectItem key={role.value} value={role.value}>
+                                                {role.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                             {errors.role && (
                                 <p className="text-sm text-destructive">{errors.role}</p>
                             )}
@@ -205,7 +244,7 @@ export default function EditUserModal({ open, setOpen, user }) {
                         >
                             Batal
                         </Button>
-                        <Button type="submit" disabled={processing}>
+                        <Button type="submit" disabled={processing || loading}>
                             {processing ? 'Menyimpan...' : 'Update'}
                         </Button>
                     </DialogFooter>

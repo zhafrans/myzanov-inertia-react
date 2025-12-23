@@ -26,10 +26,11 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Settings routes
-    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
-    Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
-    Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+    // Profile Routes
+    Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/image', [\App\Http\Controllers\ProfileController::class, 'updateImage'])->name('profile.image.update');
+    Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
     Route::get(
         '/dashboard',
@@ -47,8 +48,13 @@ Route::middleware('auth')->group(function () {
         ->name('users.store')
         ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
+    // EDIT (Admin + SuperAdmin)
+    Route::get('/users/{user}/edit', [UserController::class, 'edit'])
+        ->name('users.edit')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
     // UPDATE (Admin + SuperAdmin)
-    Route::put('/users/{id}', [UserController::class, 'update'])
+    Route::put('/users/{user}', [UserController::class, 'update'])
         ->name('users.update')
         ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 

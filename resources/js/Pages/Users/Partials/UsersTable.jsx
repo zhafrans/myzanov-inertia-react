@@ -24,7 +24,7 @@ import { useState, useEffect } from "react";
 import CreateUserModal from "./Modals/CreateUserModal";
 import EditUserModal from "./Modals/EditUserModal";
 import ConfirmDeleteModal from "@/Components/ConfirmDeleteModal";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -270,6 +270,12 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-8 w-8">
+                                                {user.profile_image_url && (
+                                                    <AvatarImage
+                                                        src={user.profile_image_url}
+                                                        alt={user.name}
+                                                    />
+                                                )}
                                                 <AvatarFallback className="bg-primary/10 text-primary">
                                                     {user.name[0].toUpperCase()}
                                                 </AvatarFallback>
@@ -376,6 +382,12 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                             {/* Avatar & Name */}
                             <div className="flex items-center gap-3 mb-2">
                                 <Avatar className="h-10 w-10">
+                                    {user.profile_image_url && (
+                                        <AvatarImage
+                                            src={user.profile_image_url}
+                                            alt={user.name}
+                                        />
+                                    )}
                                     <AvatarFallback className="bg-primary/10 text-primary">
                                         {user.name[0].toUpperCase()}
                                     </AvatarFallback>
