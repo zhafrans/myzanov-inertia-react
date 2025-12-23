@@ -36,6 +36,38 @@ const formatDate = (dateString) => {
     })
 }
 
+const detectDevice = (userAgent) => {
+    if (!userAgent) return { type: 'Unknown', icon: '🖥️' }
+    
+    const ua = userAgent.toLowerCase()
+    
+    // Check for tablet
+    if (ua.includes('ipad')) {
+        return { type: 'Tablet', icon: '📱' }
+    }
+    if (ua.includes('android') && !ua.includes('mobile')) {
+        return { type: 'Tablet', icon: '📱' }
+    }
+    
+    // Check for mobile
+    if (ua.includes('mobile') || 
+        (ua.includes('android') && ua.includes('mobile')) ||
+        ua.includes('iphone') ||
+        ua.includes('windows phone')) {
+        return { type: 'Mobile', icon: '📱' }
+    }
+    
+    // Check for desktop
+    if (ua.includes('windows') || 
+        ua.includes('macintosh') || 
+        ua.includes('linux') || 
+        ua.includes('x11')) {
+        return { type: 'Desktop', icon: '🖥️' }
+    }
+    
+    return { type: 'Unknown', icon: '🖥️' }
+}
+
 export default function ActivityLogsTable({ logs, loading }) {
     const handlePageClick = (url) => {
         if (url) {
@@ -60,6 +92,7 @@ export default function ActivityLogsTable({ logs, loading }) {
                             <TableHead>Action</TableHead>
                             <TableHead>Module</TableHead>
                             <TableHead>Description</TableHead>
+                            <TableHead>Device</TableHead>
                             <TableHead>IP Address</TableHead>
                             <TableHead>Date</TableHead>
                         </TableRow>
@@ -67,61 +100,70 @@ export default function ActivityLogsTable({ logs, loading }) {
 
                     <TableBody>
                         {logs.data.length > 0 ? (
-                            logs.data.map(log => (
-                                <TableRow key={log.id} className="hover:bg-muted/50">
-                                    <TableCell className="font-medium">
-                                        {log.user ? log.user.name : 'System'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={actionVariant(log.action)}>
-                                            {log.action}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        {log.module && (
-                                            <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded">
-                                                {log.module}
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="max-w-md">
-                                        <div className="space-y-1">
-                                            <p className="text-sm">{log.description}</p>
-                                            {log.old_values && log.new_values && Object.keys(log.new_values).length > 0 && (
-                                                <details className="text-xs text-muted-foreground">
-                                                    <summary className="cursor-pointer hover:text-foreground">
-                                                        View Changes
-                                                    </summary>
-                                                    <div className="mt-2 space-y-2 p-2 bg-muted rounded">
-                                                        {Object.keys(log.new_values).map(key => (
-                                                            <div key={key} className="flex items-start gap-2">
-                                                                <span className="font-medium min-w-24">{key}:</span>
-                                                                <div className="flex-1">
-                                                                    <div className="line-through text-red-500">
-                                                                        {log.old_values[key] ? JSON.stringify(log.old_values[key]) : '(empty)'}
-                                                                    </div>
-                                                                    <div className="text-green-600">
-                                                                        → {JSON.stringify(log.new_values[key])}
+                            logs.data.map(log => {
+                                const device = detectDevice(log.user_agent)
+                                return (
+                                    <TableRow key={log.id} className="hover:bg-muted/50">
+                                        <TableCell className="font-medium">
+                                            {log.user ? log.user.name : 'System'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={actionVariant(log.action)}>
+                                                {log.action}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {log.module && (
+                                                <span className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-800 rounded">
+                                                    {log.module}
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="max-w-md">
+                                            <div className="space-y-1">
+                                                <p className="text-sm">{log.description}</p>
+                                                {log.old_values && log.new_values && Object.keys(log.new_values).length > 0 && (
+                                                    <details className="text-xs text-muted-foreground">
+                                                        <summary className="cursor-pointer hover:text-foreground">
+                                                            View Changes
+                                                        </summary>
+                                                        <div className="mt-2 space-y-2 p-2 bg-muted rounded">
+                                                            {Object.keys(log.new_values).map(key => (
+                                                                <div key={key} className="flex items-start gap-2">
+                                                                    <span className="font-medium min-w-24">{key}:</span>
+                                                                    <div className="flex-1">
+                                                                        <div className="line-through text-red-500">
+                                                                            {log.old_values[key] ? JSON.stringify(log.old_values[key]) : '(empty)'}
+                                                                        </div>
+                                                                        <div className="text-green-600">
+                                                                            → {JSON.stringify(log.new_values[key])}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </details>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-xs">
-                                        {log.ip_address}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground text-sm">
-                                        {formatDate(log.created_at)}
-                                    </TableCell>
-                                </TableRow>
-                            ))
+                                                            ))}
+                                                        </div>
+                                                    </details>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-sm">{device.icon}</span>
+                                                <span className="text-xs text-muted-foreground">{device.type}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            {log.ip_address}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground text-sm">
+                                            {formatDate(log.created_at)}
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                     No activity logs found
                                 </TableCell>
                             </TableRow>
@@ -180,8 +222,19 @@ export default function ActivityLogsTable({ logs, loading }) {
                                 </div>
                             </div>
 
-                            {/* IP Address & Date */}
-                            <div className="flex items-center justify-between pt-2 border-t">
+                            {/* Device, IP Address & Date */}
+                            <div className="flex items-center justify-between pt-2 border-t gap-4">
+                                <div>
+                                    <p className="text-xs text-muted-foreground mb-0.5">
+                                        Device
+                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs">{detectDevice(log.user_agent).icon}</span>
+                                        <p className="text-xs">
+                                            {detectDevice(log.user_agent).type}
+                                        </p>
+                                    </div>
+                                </div>
                                 <div>
                                     <p className="text-xs text-muted-foreground mb-0.5">
                                         IP Address
