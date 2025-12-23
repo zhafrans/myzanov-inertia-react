@@ -115,7 +115,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{landingPageContent}', [LandingPageController::class, 'destroy'])->name('destroy');
         });
 
-   Route::middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value)
+   Route::middleware('role:' . UserRole::SuperAdmin->value)
     ->group(function () {
         Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);
         Route::get('/api/dashboard/years', [DashboardController::class, 'getYearOptions']);
