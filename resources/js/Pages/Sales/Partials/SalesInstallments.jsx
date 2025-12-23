@@ -3,7 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
 import { useState } from "react";
+import { usePage } from "@inertiajs/react";
 import EditInstallmentModal from "../EditInstallmentModal";
+import { canInputInstallment } from "@/lib/userRoles";
 
 export default function SalesInstallments({
     data,
@@ -11,6 +13,8 @@ export default function SalesInstallments({
     saleId,
     collectors,
 }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
     const installmentsData = installments || data.installments || [];
     const [editingInstallment, setEditingInstallment] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -65,7 +69,7 @@ export default function SalesInstallments({
                                     <span className="font-medium text-xs md:text-sm">
                                         {installment.date}
                                     </span>
-                                    {saleId && installment.id && (
+                                    {saleId && installment.id && canInputInstallment(user) && (
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -92,7 +96,7 @@ export default function SalesInstallments({
                                         Rp{" "}
                                         {installment.amount?.toLocaleString()}
                                     </span>
-                                    {saleId && installment.id && (
+                                    {saleId && installment.id && canInputInstallment(user) && (
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -118,7 +122,7 @@ export default function SalesInstallments({
                                     <span className="font-medium text-xs md:text-sm truncate">
                                         {installment.collector}
                                     </span>
-                                    {saleId && installment.id && (
+                                    {saleId && installment.id && canInputInstallment(user) && (
                                         <Button
                                             variant="ghost"
                                             size="icon"

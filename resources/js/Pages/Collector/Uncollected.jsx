@@ -298,7 +298,7 @@ export default function CollectorUncollected() {
                                                 route("sales.show", sale.id)
                                             )
                                         }
-                                        className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
+                                        className="w-full px-6 bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer rounded-none border-b-2 border-gray-800"
                                     >
                                         {/* Card No */}
                                         <div className="mb-2">
@@ -407,7 +407,7 @@ export default function CollectorUncollected() {
                                         {/* Collector (jika showAllCollectors) */}
                                         {showAllCollectors &&
                                             sale.last_collector_name && (
-                                                <div className="pt-2 border-t">
+                                                <div className="pt-2">
                                                     <p className="text-xs text-muted-foreground mb-0.5">
                                                         Collector
                                                     </p>

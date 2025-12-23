@@ -539,7 +539,7 @@ export default function CollectorIndex() {
                                                 )
                                             )
                                         }
-                                        className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer"
+                                        className="w-full px-6 bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer rounded-none border-b-2 border-gray-800"
                                     >
                                         {/* Card No */}
                                         <div className="mb-2">
@@ -628,7 +628,7 @@ export default function CollectorIndex() {
                                         </div>
 
                                         {/* Nama Penagih & Status */}
-                                        <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                                        <div className="grid grid-cols-2 gap-2 pt-2">
                                             <div>
                                                 <p className="text-xs text-muted-foreground mb-0.5">
                                                     Penagih

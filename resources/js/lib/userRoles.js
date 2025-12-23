@@ -27,6 +27,6 @@ export const isDriver = (user) => hasRole(user, USER_ROLES.DRIVER);
 export const isCollector = (user) => hasRole(user, USER_ROLES.COLLECTOR);
 
 // Combined role check functions based on requirements
-export const canEditSales = (user) => isSuperAdmin(user); // Only SUPER_ADMIN
+export const canEditSales = (user) => hasAnyRole(user, [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN]); // SUPER_ADMIN and ADMIN
 export const canInputInstallment = (user) => hasAnyRole(user, [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN]); // SUPER_ADMIN and ADMIN
 export const canDeleteSales = (user) => isSuperAdmin(user); // Only SUPER_ADMIN
