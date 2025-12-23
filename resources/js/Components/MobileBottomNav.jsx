@@ -11,6 +11,7 @@ import {
     MoreHorizontal,
     User,
     LogOut,
+    MessageCircle,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -109,6 +110,12 @@ export default function MobileBottomNav() {
             label: "Activity Logs",
             href: "/activity-logs",
             icon: Clock,
+            roles: ["SUPER_ADMIN"],
+        },
+        {
+            label: "WhatsApp Session",
+            href: "/whatsapp-session",
+            icon: MessageCircle,
             roles: ["SUPER_ADMIN"],
         },
     ];

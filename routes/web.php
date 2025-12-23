@@ -115,6 +115,11 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{landingPageContent}', [LandingPageController::class, 'destroy'])->name('destroy');
         });
 
+    // WhatsApp Session - Super Admin only
+    Route::get('/whatsapp-session', [\App\Http\Controllers\WhatsAppSessionController::class, 'index'])
+        ->name('whatsapp-session.index')
+        ->middleware('role:' . UserRole::SuperAdmin->value);
+
    Route::middleware('role:' . UserRole::SuperAdmin->value)
     ->group(function () {
         Route::get('/api/dashboard/data', [DashboardController::class, 'getDashboardData']);

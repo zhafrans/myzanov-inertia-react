@@ -14,6 +14,7 @@ import {
     Receipt,
     AlertCircle,
     ChevronRight,
+    MessageCircle,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/Contexts/SidebarContext";
@@ -64,6 +65,12 @@ export default function AppSidebar() {
             label: "Activity Logs",
             href: "/activity-logs",
             icon: Clock,
+            roles: ["SUPER_ADMIN"],
+        },
+        {
+            label: "WhatsApp Session",
+            href: "/whatsapp-session",
+            icon: MessageCircle,
             roles: ["SUPER_ADMIN"],
         },
     ];
