@@ -40,7 +40,7 @@ class UserSeeder extends Seeder
         ]);
 
         // ================= SALES =================
-        $sales = ['umi', 'ati', 'into', 'nisya', 'resti', 'sri', 'ika'];
+        $sales = ['umi', 'ati', 'into', 'nisya', 'resti', 'sri', 'ika', 'winda'];
         $inactiveSales = ['ati', 'into', 'resti'];
 
         foreach ($sales as $name) {

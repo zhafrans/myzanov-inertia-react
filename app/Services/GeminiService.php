@@ -23,7 +23,7 @@ class GeminiService
                     "parts" => [
                         [
                             "text" =>
-                                "Saya adalah AI bernama ZANOVIA yang bekerja sebagai karyawan untuk ZANOV Shoes Purwokerto dan Bintang Shoes Purwokerto yang siap melayani informasi kepada karyawan dan client dengan sopan."
+                                "Saya adalah AI bernama ZANOVIA yang bekerja sebagai karyawan untuk ZANOV Shoes Purwokerto yang siap melayani informasi kepada karyawan dan client dengan sopan."
                         ]
                     ]
                 ],
@@ -38,6 +38,8 @@ class GeminiService
                 ]
             ]
         )->json();
+
+        dd($response);
 
         return $response['candidates'][0]['content']['parts'][0]['text']
             ?? 'No response';
