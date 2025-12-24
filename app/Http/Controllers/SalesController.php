@@ -38,6 +38,11 @@ class SalesController extends Controller
             $query->where('sales.payment_type', $request->payment_type);
         }
 
+        // Filter berdasarkan seller_id
+        if ($request->filled('seller_id') && $request->seller_id !== 'all') {
+            $query->where('sales.seller_id', $request->seller_id);
+        }
+
         // Filter berdasarkan lokasi
         if ($request->filled('province_id')) {
             $query->where('sales.province_id', $request->province_id);
@@ -185,6 +190,12 @@ class SalesController extends Controller
         // Get collectors
         $collectors = User::select('id', 'name')->orderBy('name')->get();
 
+        // Get sellers (users who have sales)
+        $sellers = User::select('id', 'name')
+            ->whereHas('sales')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Sales/Index', [
             'sales' => $sales,
             'filters' => [
@@ -195,12 +206,14 @@ class SalesController extends Controller
                 'search' => $request->search ?? '',
                 'startDate' => $request->startDate ?? '',
                 'endDate' => $request->endDate ?? '',
+                'seller_id' => $request->seller_id ?? 'all',
                 'province_id' => $request->province_id ?? '',
                 'city_id' => $request->city_id ?? '',
                 'subdistrict_id' => $request->subdistrict_id ?? '',
                 'village_id' => $request->village_id ?? '',
             ],
             'collectors' => $collectors,
+            'sellers' => $sellers,
         ]);
     }
 
@@ -943,6 +956,7 @@ class SalesController extends Controller
         $filters = $request->only([
             'status',
             'payment_type',
+            'seller_id',
             'startDate',
             'endDate',
             'search',

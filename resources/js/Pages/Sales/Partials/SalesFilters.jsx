@@ -20,7 +20,7 @@ import { id } from "date-fns/locale";
 import { useState, useEffect } from "react";
 import LocationFilters from "./LocationFilters";
 
-export default function SalesFilters({ filters, setFilters }) {
+export default function SalesFilters({ filters, setFilters, sellers = [] }) {
     const [isOpen, setIsOpen] = useState(false);
     const [localFilters, setLocalFilters] = useState(filters);
 
@@ -253,6 +253,32 @@ export default function SalesFilters({ filters, setFilters }) {
                                 <SelectItem value="unpaid">
                                     Belum Lunas
                                 </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    {/* Filter Nama Sales */}
+                    <div>
+                        <p className="text-sm font-medium mb-1">Nama Sales</p>
+                        <Select
+                            value={localFilters.seller_id || "all"}
+                            onValueChange={(v) =>
+                                setLocalFilters((prev) => ({
+                                    ...prev,
+                                    seller_id: v,
+                                }))
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Semua" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Semua</SelectItem>
+                                {sellers.map((seller) => (
+                                    <SelectItem key={seller.id} value={seller.id.toString()}>
+                                        {seller.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
