@@ -27,7 +27,6 @@ return new class extends Migration
             $table->string('is_tempo')->nullable();
             $table->timestamp('tempo_at')->nullable();
             $table->text('note')->nullable();
-            $table->string('is_printed')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users');
             $table->timestamps();
         });

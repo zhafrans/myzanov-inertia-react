@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('color')->nullable();
             $table->string('size')->nullable();
             $table->integer('quantity');
+            $table->integer('print_count')->default(0);
             $table->timestamps();
         });
     }

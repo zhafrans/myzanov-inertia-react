@@ -71,7 +71,6 @@ class MigrateOldSalesData extends Command
                         'is_tempo' => $tempoData['is_tempo'],
                         'tempo_at' => $tempoData['tempo_at'],
                         'note' => $oldSale->ket,
-                        'is_printed' => (bool) $oldSale->is_created,
                         'created_at' => $oldSale->created_at ?? null,
                         'updated_at' => $oldSale->updated_at ?? null,
                     ]);
@@ -83,6 +82,7 @@ class MigrateOldSalesData extends Command
                         'color' => $oldSale->warna ?? null,
                         'size' => $oldSale->size ?? null,
                         'quantity' => 1, // Default quantity 1
+                        'print_count' => 1,
                     ]);
 
                     // 8. Create installments jika ada

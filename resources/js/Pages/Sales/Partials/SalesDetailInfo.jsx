@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Clock } from "lucide-react"
+import { Clock, Printer } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
 
-export default function SalesDetailInfo({ data }) {
+export default function SalesDetailInfo({ data, saleId }) {
     const totalPrice = data.items.reduce(
         (sum, item) => sum + (item.price || 0),
         data.totalPrice || 0
@@ -112,24 +114,52 @@ export default function SalesDetailInfo({ data }) {
                     <Badge variant="outline" className="text-xs md:text-sm">{data.items.length} Item</Badge>
                 </CardHeader>
                 <CardContent className="space-y-2 text-sm">
-                    {data.items.map((item, i) => (
-                        <div
-                            key={i}
-                            className="flex flex-col md:flex-row md:justify-between gap-2 border rounded-md p-3 hover:bg-gray-50"
-                        >
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold truncate">
-                                    {item.product || 'Produk'}
-                                </p>
-                                <p className="text-muted-foreground text-xs md:text-sm">
-                                    Warna: {item.color || '-'} | Size: {item.size || '-'} | Qty: {item.quantity || 1}
-                                </p>
+                    {data.items.map((item, i) => {
+                        const [showPrintCount, setShowPrintCount] = useState(false);
+                        
+                        const handlePrint = (e) => {
+                            e.stopPropagation();
+                            const printUrl = route('sales.items.print', { saleId, itemId: item.id });
+                            window.open(printUrl, '_blank');
+                        };
+
+                        return (
+                            <div
+                                key={item.id || i}
+                                className="flex flex-col md:flex-row md:justify-between gap-2 border rounded-md p-3 hover:bg-gray-50 relative group"
+                                onMouseEnter={() => setShowPrintCount(true)}
+                                onMouseLeave={() => setShowPrintCount(false)}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold truncate">
+                                        {item.product || 'Produk'}
+                                    </p>
+                                    <p className="text-muted-foreground text-xs md:text-sm">
+                                        Warna: {item.color || '-'} | Size: {item.size || '-'} | Qty: {item.quantity || 1}
+                                    </p>
+                                    {showPrintCount && (
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Dicetak: {item.print_count || 0} kali
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="font-medium text-sm md:text-base flex-shrink-0">
+                                        Rp {(item.price || 0).toLocaleString()}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handlePrint}
+                                        className="h-8 w-8 p-0 flex-shrink-0"
+                                        title="Cetak Kartu"
+                                    >
+                                        <Printer className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="font-medium text-sm md:text-base flex-shrink-0">
-                                Rp {(item.price || 0).toLocaleString()}
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </CardContent>
             </Card>
 

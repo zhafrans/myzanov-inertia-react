@@ -423,14 +423,19 @@ class SalesController extends Controller
         });
 
         // Format items untuk frontend
-        $items = $sale->items->map(function ($item) {
+        $items = $sale->items->map(function ($item) use ($sale) {
+            // Calculate price per item (total price / quantity)
+            $pricePerItem = $item->price_per_item ?? ($sale->price / $item->quantity);
+            
             return [
                 'id' => $item->id,
                 'product' => $item->product_name,
                 'color' => $item->color,
                 'size' => $item->size,
                 'quantity' => (int) $item->quantity,
-                'price_per_item' => $item->price ?? 0,
+                'price' => (float) $pricePerItem,
+                'price_per_item' => (float) $pricePerItem,
+                'print_count' => (int) ($item->print_count ?? 0),
             ];
         });
 
@@ -1669,5 +1674,59 @@ class SalesController extends Controller
             'days' => (int) $totalDays,
             'days_with_installments' => (int) $daysWithInstallments,
         ];
+    }
+
+    /**
+     * Print sales item card
+     */
+    public function printItem(string $saleId, string $itemId)
+    {
+        $sale = Sales::with([
+            'items',
+            'installments' => function ($query) {
+                $query->orderBy('payment_date', 'asc')
+                    ->with('collector');
+            },
+            'seller',
+            'province',
+            'city',
+            'subdistrict',
+            'village',
+        ])->findOrFail($saleId);
+
+        $item = $sale->items->find($itemId);
+        
+        if (!$item) {
+            abort(404, 'Item not found');
+        }
+
+        // Increment print_count
+        $item->increment('print_count');
+
+        // Get first installment (DP or first payment)
+        $firstInstallment = $sale->installments->first();
+        
+        // Format data untuk print
+        $hargaNumeric = (float) $sale->price;
+        $printData = [
+            'no_kartu' => $sale->card_number ?? '-',
+            'nama' => $sale->customer_name ?? '-',
+            'no_telp' => $sale->phone ?? '',
+            'alamat' => $sale->address ?? '-',
+            'kecamatan' => $sale->subdistrict?->name ?? '-',
+            'kabupaten' => $sale->city?->name ?? '-',
+            'tgl_pengambilan' => $sale->transaction_at ? Carbon::parse($sale->transaction_at)->format('d-m-Y') : '-',
+            'nama_produk' => $item->product_name ?? '-',
+            'warna' => $item->color ?? '-',
+            'size' => $item->size ?? '-',
+            'harga' => $hargaNumeric,
+            'ket' => $sale->note ?? '',
+            'is_tempo' => $sale->is_tempo === 'yes' || $sale->payment_type === 'cash_tempo',
+            'ang1' => $firstInstallment ? (float) $firstInstallment->installment_amount : 0,
+            'tgl_ang1' => $firstInstallment ? Carbon::parse($firstInstallment->payment_date)->format('Y-m-d') : '',
+            'coll1' => $firstInstallment && $firstInstallment->collector ? $firstInstallment->collector->name : '',
+        ];
+
+        return view('sales.print-item', compact('printData'));
     }
 }
