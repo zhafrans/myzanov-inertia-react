@@ -365,12 +365,13 @@ function SalesMobileCard({ item, collectors }) {
 }
 
 export default function SalesTable() {
-    const { sales, filters: initialFilters, collectors } = usePage().props;
+    const { sales, filters: initialFilters, collectors, sellers } = usePage().props;
 
     const [filters, setFilters] = useState({
         sort: initialFilters.sort || "desc",
         status: initialFilters.status || "all",
         payment_type: initialFilters.payment_type || "all",
+        seller_id: initialFilters.seller_id || "all",
         notCollectedThisMonth: initialFilters.notCollectedThisMonth || false,
         startDate: initialFilters.startDate || "",
         endDate: initialFilters.endDate || "",
@@ -458,6 +459,7 @@ export default function SalesTable() {
                         <SalesFilters
                             filters={filters}
                             setFilters={handleFilterChange}
+                            sellers={sellers}
                         />
                     </div>
                 </div>
