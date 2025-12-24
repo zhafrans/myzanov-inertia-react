@@ -29,7 +29,7 @@ import {
 import { toast } from "react-toastify";
 
 import CreateModal from "../CreateModal";
-import { canEditSales, canInputInstallment, canDeleteSales } from "@/lib/userRoles";
+import { canEditSales, canInputInstallment, canDeleteSales, hasAnyRole, USER_ROLES } from "@/lib/userRoles";
 
 // Mobile Card Component
 function SalesMobileCard({ item, collectors }) {
@@ -365,7 +365,11 @@ function SalesMobileCard({ item, collectors }) {
 }
 
 export default function SalesTable() {
-    const { sales, filters: initialFilters, collectors, sellers } = usePage().props;
+    const { sales, filters: initialFilters, collectors, sellers, auth } = usePage().props;
+    const user = auth.user;
+    
+    // Check if user can export (SUPER_ADMIN and ADMIN only)
+    const canExport = hasAnyRole(user, [USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN]);
 
     const [filters, setFilters] = useState({
         sort: initialFilters.sort || "desc",
@@ -443,15 +447,17 @@ export default function SalesTable() {
                 />
 
                 <div className="flex gap-2 w-full md:w-auto">
-                    <Button
-                        variant="outline"
-                        onClick={handleExport}
-                        size="sm"
-                        className="flex-1 md:flex-initial text-green-600 hover:text-green-700 text-xs md:text-sm"
-                    >
-                        <Download className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                        <span className="hidden sm:inline">Export</span>
-                    </Button>
+                    {canExport && (
+                        <Button
+                            variant="outline"
+                            onClick={handleExport}
+                            size="sm"
+                            className="flex-1 md:flex-initial text-green-600 hover:text-green-700 text-xs md:text-sm"
+                        >
+                            <Download className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                            Export Data
+                        </Button>
+                    )}
                     <div className="flex-1 md:flex-initial">
                         <CreateModal />
                     </div>

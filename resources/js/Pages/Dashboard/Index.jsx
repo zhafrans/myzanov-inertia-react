@@ -222,20 +222,6 @@ export default function Dashboard() {
                             mudah dan efisien.
                         </p> */}
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-md hover:shadow-lg"
-                            >
-                                Coba Muat Ulang
-                            </button>
-                            {/* <button
-                                onClick={fetchDashboardData}
-                                className="px-6 py-3 bg-white text-primary-600 font-medium rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition-colors"
-                            >
-                                Refresh Data
-                            </button> */}
-                        </div>
                     </div>
 
                     {error && (
