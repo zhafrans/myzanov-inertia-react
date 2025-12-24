@@ -20,6 +20,10 @@ const actionVariant = action => {
             return "destructive"
         case "READ":
             return "outline"
+        case "LOGIN":
+            return "default"
+        case "LOGOUT":
+            return "secondary"
         default:
             return "outline"
     }

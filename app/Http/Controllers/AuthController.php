@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use App\Models\User;
+use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -46,11 +47,36 @@ class AuthController extends Controller
         Auth::login($user, $remember);
         $request->session()->regenerate();
 
+        // Log login activity
+        ActivityLog::create([
+            'user_id' => $user->id,
+            'action' => 'login',
+            'module' => 'auth',
+            'description' => "User {$user->name} ({$user->email}) berhasil login",
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         return redirect()->intended('/dashboard');
     }
 
     public function logout(Request $request)
     {
+        // Get user before logout (because after logout, Auth::user() will be null)
+        $user = Auth::user();
+
+        // Log logout activity before logout
+        if ($user) {
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'action' => 'logout',
+                'module' => 'auth',
+                'description' => "User {$user->name} ({$user->email}) logout",
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        }
+
         Auth::logout();
 
         $request->session()->invalidate();
