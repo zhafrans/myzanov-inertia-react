@@ -1703,6 +1703,23 @@ class SalesController extends Controller
         // Increment print_count
         $item->increment('print_count');
 
+        // Log activity
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'action' => 'PRINT',
+            'module' => 'sales',
+            'description' => "Mencetak kartu item: {$item->product_name} - {$item->color} - {$item->size} untuk penjualan {$sale->invoice} - {$sale->customer_name}",
+            'model_id' => $sale->id,
+            'model_type' => Sales::class,
+            'new_values' => [
+                'item_id' => $item->id,
+                'item' => $item->toArray(),
+                'print_count' => $item->print_count,
+            ],
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
         // Get first installment (DP or first payment)
         $firstInstallment = $sale->installments->first();
         
