@@ -22,6 +22,7 @@ import Chart from "react-apexcharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import SalesFilters from "@/Pages/Sales/Partials/SalesFilters";
 import SalesPagination from "@/Pages/Sales/Partials/SalesPagination";
+import { Clock } from "lucide-react";
 
 export default function CollectorIndex() {
     const {
@@ -115,6 +116,43 @@ export default function CollectorIndex() {
             currency: "IDR",
             minimumFractionDigits: 0,
         }).format(amount);
+    };
+
+    const calculateDaysUntilDue = (tempoAt) => {
+        if (!tempoAt) return null;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const dueDate = new Date(tempoAt);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays;
+    };
+
+    const getTempoDisplay = (tempoAt) => {
+        if (!tempoAt) return { date: "-", daysText: null, isOverdue: false };
+        
+        const daysUntil = calculateDaysUntilDue(tempoAt);
+        const isOverdue = daysUntil < 0;
+        
+        let daysText = null;
+        if (daysUntil > 0) {
+            daysText = `${daysUntil} hari lagi`;
+        } else if (daysUntil < 0) {
+            daysText = `${Math.abs(daysUntil)} hari yang lalu`;
+        } else {
+            daysText = "Hari ini";
+        }
+        
+        return {
+            date: formatDate(tempoAt),
+            daysText,
+            isOverdue,
+        };
     };
 
     // Chart options untuk monthly data
@@ -401,6 +439,7 @@ export default function CollectorIndex() {
                                         <TableHead>Tanggal Tagihan</TableHead>
                                         <TableHead>Jumlah Tagihan</TableHead>
                                         <TableHead>Nama Penagih</TableHead>
+                                        <TableHead>Tanggal Jatuh Tempo</TableHead>
                                         <TableHead>Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -495,6 +534,43 @@ export default function CollectorIndex() {
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
+                                                    {(() => {
+                                                        const tempo = getTempoDisplay(installment.tempo_at);
+                                                        if (!installment.tempo_at) {
+                                                            return <span className="text-muted-foreground">-</span>;
+                                                        }
+                                                        return (
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {tempo.isOverdue && (
+                                                                        <Clock className="w-4 h-4 text-red-600" />
+                                                                    )}
+                                                                    <span
+                                                                        className={`font-medium ${
+                                                                            tempo.isOverdue
+                                                                                ? "text-red-600"
+                                                                                : "text-foreground"
+                                                                        }`}
+                                                                    >
+                                                                        {tempo.date}
+                                                                    </span>
+                                                                </div>
+                                                                {tempo.daysText && (
+                                                                    <span
+                                                                        className={`text-xs ${
+                                                                            tempo.isOverdue
+                                                                                ? "text-red-600"
+                                                                                : "text-muted-foreground"
+                                                                        }`}
+                                                                    >
+                                                                        {tempo.daysText}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </TableCell>
+                                                <TableCell>
                                                     <span
                                                         className={`px-2 py-1 rounded text-xs ${
                                                             installment.status ===
@@ -514,7 +590,7 @@ export default function CollectorIndex() {
                                     ) : (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={11}
+                                                colSpan={12}
                                                 className="text-center py-8 text-muted-foreground"
                                             >
                                                 Tidak ada data tagihan
@@ -628,7 +704,7 @@ export default function CollectorIndex() {
                                         </div>
 
                                         {/* Nama Penagih & Status */}
-                                        <div className="grid grid-cols-2 gap-2 pt-2">
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
                                             <div>
                                                 <p className="text-xs text-muted-foreground mb-0.5">
                                                     Penagih
@@ -657,6 +733,49 @@ export default function CollectorIndex() {
                                                 </span>
                                             </div>
                                         </div>
+
+                                        {/* Tanggal Jatuh Tempo */}
+                                        {installment.tempo_at && (
+                                            <div className="pt-2 border-t">
+                                                <p className="text-xs text-muted-foreground mb-0.5">
+                                                    Tanggal Jatuh Tempo
+                                                </p>
+                                                <div className="text-xs">
+                                                    {(() => {
+                                                        const tempo = getTempoDisplay(installment.tempo_at);
+                                                        return (
+                                                            <div className="flex flex-col">
+                                                                <div className="flex items-center gap-1.5">
+                                                                    {tempo.isOverdue && (
+                                                                        <Clock className="w-3 h-3 text-red-600" />
+                                                                    )}
+                                                                    <span
+                                                                        className={`font-medium ${
+                                                                            tempo.isOverdue
+                                                                                ? "text-red-600"
+                                                                                : "text-foreground"
+                                                                        }`}
+                                                                    >
+                                                                        {tempo.date}
+                                                                    </span>
+                                                                </div>
+                                                                {tempo.daysText && (
+                                                                    <span
+                                                                        className={`${
+                                                                            tempo.isOverdue
+                                                                                ? "text-red-600"
+                                                                                : "text-muted-foreground"
+                                                                        }`}
+                                                                    >
+                                                                        {tempo.daysText}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))
                             ) : (

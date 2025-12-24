@@ -1,12 +1,60 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Clock } from "lucide-react"
 
 export default function SalesDetailInfo({ data }) {
     const totalPrice = data.items.reduce(
         (sum, item) => sum + (item.price || 0),
         data.totalPrice || 0
     )
+
+    const formatDate = (dateString) => {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    };
+
+    const calculateDaysUntilDue = (tempoAt) => {
+        if (!tempoAt) return null;
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const dueDate = new Date(tempoAt);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        return diffDays;
+    };
+
+    const getTempoDisplay = (tempoAt) => {
+        if (!tempoAt) return { date: "-", daysText: null, isOverdue: false };
+        
+        const daysUntil = calculateDaysUntilDue(tempoAt);
+        const isOverdue = daysUntil < 0;
+        
+        let daysText = null;
+        if (daysUntil > 0) {
+            daysText = `${daysUntil} hari lagi`;
+        } else if (daysUntil < 0) {
+            daysText = `${Math.abs(daysUntil)} hari yang lalu`;
+        } else {
+            daysText = "Hari ini";
+        }
+        
+        return {
+            date: formatDate(tempoAt),
+            daysText,
+            isOverdue,
+        };
+    };
 
     return (
         <div className="space-y-4">
@@ -99,11 +147,44 @@ export default function SalesDetailInfo({ data }) {
                         label="Total Harga"
                         value={`Rp ${totalPrice.toLocaleString()}`}
                     />
-                    {data.isTempo && data.tempoAt && (
-                        <Summary
-                            label="Tempo"
-                            value={`${data.isTempo === 'yes' ? 'Ya' : 'Tidak'} - ${data.tempoAt}`}
-                        />
+                    {data.tempoAt && (
+                        <div className="flex justify-between items-start">
+                            <span>Tanggal Jatuh Tempo</span>
+                            <div className="flex flex-col items-end">
+                                {(() => {
+                                    const tempo = getTempoDisplay(data.tempoAt);
+                                    return (
+                                        <div className="flex flex-col items-end">
+                                            <div className="flex items-center gap-1.5">
+                                                {tempo.isOverdue && (
+                                                    <Clock className="w-4 h-4 text-red-600" />
+                                                )}
+                                                <span
+                                                    className={`font-semibold ${
+                                                        tempo.isOverdue
+                                                            ? "text-red-600"
+                                                            : ""
+                                                    }`}
+                                                >
+                                                    {tempo.date}
+                                                </span>
+                                            </div>
+                                            {tempo.daysText && (
+                                                <span
+                                                    className={`text-xs mt-0.5 ${
+                                                        tempo.isOverdue
+                                                            ? "text-red-600"
+                                                            : "text-muted-foreground"
+                                                    }`}
+                                                >
+                                                    {tempo.daysText}
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+                        </div>
                     )}
                     <Separator />
                     <Summary

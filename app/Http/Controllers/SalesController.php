@@ -392,7 +392,7 @@ class SalesController extends Controller
         $sale = Sales::with([
             'items',
             'installments' => function ($query) {
-                $query->orderBy('payment_date', 'desc')
+                $query->orderBy('payment_date', 'asc')
                     ->with('collector');
             },
             'outstanding',
@@ -1151,6 +1151,7 @@ class SalesController extends Controller
                     'status' => $installment->remaining_amount <= 0 ? 'paid' : 'unpaid',
                     'payment_type' => $sale->payment_type,
                     'is_dp' => $installment->is_dp ?? false,
+                    'tempo_at' => $sale->tempo_at,
                 ];
             });
 
@@ -1370,6 +1371,7 @@ class SalesController extends Controller
                     'last_collector_name' => $lastInstallment && $lastInstallment->collector ? $lastInstallment->collector->name : null,
                     'status' => $sale->remaining_amount <= 0 ? 'paid' : 'unpaid',
                     'payment_type' => $sale->payment_type,
+                    'tempo_at' => $sale->tempo_at,
                 ];
             });
 
