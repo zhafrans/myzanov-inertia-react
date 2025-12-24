@@ -47,7 +47,7 @@ export default function MobileBottomNav() {
             label: "Sales",
             href: "/sales",
             icon: Banknote,
-            roles: ["SUPER_ADMIN", "ADMIN"],
+            roles: ["SUPER_ADMIN", "ADMIN", "COLLECTOR"],
         },
         {
             label: "Users",
