@@ -1,4 +1,5 @@
 import { Link, usePage, router } from "@inertiajs/react";
+import { useEffect } from "react";
 import {
     LayoutDashboard,
     Users,
@@ -35,6 +36,13 @@ export default function MobileBottomNav() {
     const handleLogout = () => {
         router.post(route("logout"));
     };
+
+    // Close sheets when URL changes (navigation)
+    useEffect(() => {
+        setCollectorMenuOpen(false);
+        setMiscMenuOpen(false);
+        setProfileOpen(false);
+    }, [url]);
 
     const mainMenu = [
         {
@@ -203,7 +211,9 @@ export default function MobileBottomNav() {
     const isActive = (href) => {
         if (href === "/collector") {
             return (
-                url.startsWith("/collector") && url !== "/collector/uncollected"
+                url.startsWith("/collector") && 
+                url !== "/collector/uncollected" &&
+                !url.startsWith("/sales")
             );
         }
         if (href === "#") return false;
@@ -264,7 +274,10 @@ export default function MobileBottomNav() {
                             // Check if any submenu item is active for highlighting
                             const isSubmenuActive = (() => {
                                 if (item.label === "Collector") {
-                                    return url.startsWith("/collector");
+                                    // Only active if URL is exactly /collector or starts with /collector/ (but not /collector/uncollected for the main button)
+                                    // Make sure it doesn't match other routes
+                                    const isCollectorRoute = url === "/collector" || (url.startsWith("/collector/") && url !== "/collector/uncollected");
+                                    return isCollectorRoute && !url.startsWith("/sales");
                                 }
                                 if (item.label === "Misc") {
                                     return filteredMiscSubmenu.some(

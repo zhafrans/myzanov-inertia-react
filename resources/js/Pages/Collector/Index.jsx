@@ -433,6 +433,7 @@ export default function CollectorIndex() {
                                         <TableHead>Customer</TableHead>
                                         <TableHead>Sales</TableHead>
                                         <TableHead>Product</TableHead>
+                                        <TableHead>Alamat</TableHead>
                                         <TableHead>Tanggal Transaksi</TableHead>
                                         <TableHead>Total Harga</TableHead>
                                         <TableHead>Sisa Tagihan</TableHead>
@@ -475,6 +476,16 @@ export default function CollectorIndex() {
                                                     <span className="text-xs text-muted-foreground">
                                                         Size: {installment.size}
                                                     </span>
+                                                </TableCell>
+                                                <TableCell className="max-w-xs">
+                                                    <div className="flex flex-col">
+                                                        <span>{installment.address || "-"}</span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {[installment.subdistrict_name, installment.city_name]
+                                                                .filter(Boolean)
+                                                                .join(", ") || "-"}
+                                                        </span>
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell>
                                                     {formatDate(
@@ -590,7 +601,7 @@ export default function CollectorIndex() {
                                     ) : (
                                         <TableRow>
                                             <TableCell
-                                                colSpan={12}
+                                                colSpan={13}
                                                 className="text-center py-8 text-muted-foreground"
                                             >
                                                 Tidak ada data tagihan
@@ -602,7 +613,7 @@ export default function CollectorIndex() {
                         </div>
 
                         {/* Mobile Card View */}
-                        <div className="md:hidden space-y-0 overflow-hidden -mx-6">
+                        <div className="md:hidden space-y-3 -mx-6 md:mx-0 px-6 md:px-0">
                             {sales.data && sales.data.length > 0 ? (
                                 sales.data.map((installment) => (
                                     <div
@@ -615,7 +626,7 @@ export default function CollectorIndex() {
                                                 )
                                             )
                                         }
-                                        className="w-full px-6 bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3 cursor-pointer rounded-none border-b-2 border-gray-800"
+                                        className="w-full border rounded-lg bg-card hover:bg-muted/50 active:bg-muted transition-colors p-4 shadow-sm cursor-pointer"
                                     >
                                         {/* Card No */}
                                         <div className="mb-2">
@@ -660,6 +671,22 @@ export default function CollectorIndex() {
                                                         ` - ${installment.color}`}
                                                 </p>
                                             </div>
+                                        </div>
+
+                                        {/* Alamat */}
+                                        <div className="mb-2">
+                                            <p className="text-xs text-muted-foreground mb-0.5">
+                                                Alamat
+                                            </p>
+                                            <p className="text-xs text-foreground line-clamp-2">
+                                                {installment.address || "-"}
+                                                {installment.subdistrict_name && installment.city_name && (
+                                                    <span className="text-muted-foreground">
+                                                        {" "}
+                                                        - {installment.subdistrict_name}, {installment.city_name}
+                                                    </span>
+                                                )}
+                                            </p>
                                         </div>
 
                                         {/* Tanggal Transaksi */}

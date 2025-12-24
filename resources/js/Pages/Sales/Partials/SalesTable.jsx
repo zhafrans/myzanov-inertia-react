@@ -117,7 +117,7 @@ function SalesMobileCard({ item, collectors }) {
 
     return (
         <>
-            <div className="w-full px-6 border-x-0 border-y rounded-none first:border-t last:border-b bg-card hover:bg-muted/50 active:bg-muted transition-colors py-3">
+            <div className="w-full border rounded-lg bg-card hover:bg-muted/50 active:bg-muted transition-colors p-4 shadow-sm">
                 <div
                     onClick={() => router.visit(route("sales.show", item.id))}
                     className="cursor-pointer"
@@ -508,7 +508,7 @@ export default function SalesTable() {
             </div>
 
             {/* MOBILE LIST VIEW */}
-            <div className="md:hidden space-y-0 overflow-hidden -mx-6 md:mx-0 relative">
+            <div className="md:hidden space-y-3 -mx-6 md:mx-0 px-6 md:px-0 relative">
                 {loading && (
                     <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
                         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
