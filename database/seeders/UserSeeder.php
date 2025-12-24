@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
         foreach ($superAdmins as $name) {
             User::create([
                 'name' => ucfirst($name),
-                'email' => "{$name}@zanov.com",
+                'email' => "{$name}@zanov.co.id",
                 'address' => "Jl. Dummy {$name}",
                 'phone' => "0800" . rand(1000000, 9999999),
                 'role' => UserRole::SuperAdmin->value,
@@ -30,7 +30,7 @@ class UserSeeder extends Seeder
         // ================= ADMIN =================
         User::create([
             'name' => 'Afif',
-            'email' => 'afif@zanov.com',
+            'email' => 'afif@zanov.co.id',
             'address' => "Jl. Dummy Afif",
             'phone' => "0800" . rand(1000000, 9999999),
             'role' => UserRole::Admin->value,
@@ -46,7 +46,7 @@ class UserSeeder extends Seeder
         foreach ($sales as $name) {
             User::create([
                 'name' => ucfirst($name),
-                'email' => "{$name}@zanov.com",
+                'email' => "{$name}@zanov.co.id",
                 'address' => "Jl. Dummy {$name}",
                 'phone' => "0800" . rand(1000000, 9999999),
                 'role' => UserRole::Sales->value,
@@ -63,7 +63,7 @@ class UserSeeder extends Seeder
         foreach ($drivers as $name) {
             User::create([
                 'name' => ucfirst($name),
-                'email' => "{$name}@zanov.com",
+                'email' => "{$name}@zanov.co.id",
                 'address' => "Jl. Dummy {$name}",
                 'phone' => "0800" . rand(1000000, 9999999),
                 'role' => UserRole::Driver->value,
@@ -79,7 +79,7 @@ class UserSeeder extends Seeder
         foreach ($collectors as $name) {
             User::create([
                 'name' => ucfirst($name),
-                'email' => "{$name}@zanov.com",
+                'email' => "{$name}@zanov.co.id",
                 'address' => "Jl. Dummy {$name}",
                 'phone' => "0800" . rand(1000000, 9999999),
                 'role' => UserRole::Collector->value,
