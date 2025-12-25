@@ -18,7 +18,8 @@ export default function LandingPageAdmin({ contents }) {
                 {
                     key: "subtitle",
                     label: "Subtitle",
-                    defaultValue: "Premium Quality Footwear",
+                    defaultValue:
+                        "Sepatu premium dengan kualitas terbaik, dirancang untuk kenyamanan dan ketahanan maksimal.",
                 },
                 {
                     key: "background_image",
@@ -28,55 +29,63 @@ export default function LandingPageAdmin({ contents }) {
                 },
             ],
         },
+    
         home_about: {
             title: "Home About Section",
             fields: [
-                { key: "title", label: "Title", defaultValue: "About ZANOV" },
+                { key: "title", label: "Title", defaultValue: "Tentang ZANOV" },
                 {
                     key: "description",
                     label: "Description",
-                    defaultValue: "ZANOV Shoes adalah brand sepatu premium...",
+                    defaultValue:
+                        "ZANOV Shoes adalah brand sepatu yang mengutamakan kualitas material, kenyamanan pemakaian, dan desain stylish untuk menunjang penampilan sehari-hari Anda.",
                 },
             ],
         },
+    
         about_content: {
             title: "About Page Content",
             fields: [
-                { key: "title", label: "Title", defaultValue: "About ZANOV" },
+                { key: "title", label: "Title", defaultValue: "Kenapa Memilih ZANOV?" },
                 {
                     key: "description",
                     label: "Description",
-                    defaultValue: "ZANOV Shoes adalah brand...",
+                    defaultValue:
+                        "Kami percaya bahwa sepatu bukan hanya pelengkap gaya, tetapi investasi kenyamanan jangka panjang. Setiap produk ZANOV dibuat dengan detail, presisi, dan standar kualitas tinggi.",
                 },
                 {
                     key: "mission",
                     label: "Mission",
-                    defaultValue: "Misi kami adalah...",
+                    defaultValue:
+                        "Memberikan sepatu berkualitas premium dengan harga yang tetap terjangkau, serta menghadirkan pengalaman terbaik bagi setiap pelanggan.",
                 },
                 {
                     key: "vision",
                     label: "Vision",
-                    defaultValue: "Menjadi brand sepatu terdepan...",
+                    defaultValue:
+                        "Menjadi brand sepatu lokal kebanggaan Indonesia yang diakui karena kualitas, kenyamanan, dan inovasi desain.",
                 },
             ],
         },
+    
         contact_info: {
             title: "Contact Page",
             fields: [
                 {
                     key: "address",
                     label: "Address",
-                    defaultValue: "Jl. Contoh No. 123, Jakarta",
+                    defaultValue:
+                        "Workshop & Store: Jl. Contoh No. 123, Jakarta – Indonesia",
                 },
                 {
                     key: "phone",
                     label: "Phone",
-                    defaultValue: "+62 123 456 7890",
+                    defaultValue: "+62 812-3456-7890",
                 },
                 {
                     key: "email",
                     label: "Email",
-                    defaultValue: "info@zanovshoes.com",
+                    defaultValue: "support@zanovshoes.com",
                 },
                 {
                     key: "map_url",
@@ -85,30 +94,33 @@ export default function LandingPageAdmin({ contents }) {
                 },
             ],
         },
+    
         footer: {
             title: "Footer",
             fields: [
                 {
                     key: "address",
                     label: "Address",
-                    defaultValue: "Jl. Contoh No. 123, Jakarta",
+                    defaultValue:
+                        "Jl. Arsadimeja RT 3/4 Teluk, Purwokerto Selatan, Banyumas, Jawa Tengah",
                 },
                 {
                     key: "phone",
                     label: "Phone",
-                    defaultValue: "+62 123 456 7890",
+                    defaultValue: "+6281329235551",
                 },
                 {
                     key: "email",
                     label: "Email",
-                    defaultValue: "info@zanovshoes.com",
+                    defaultValue: "zanovshoes@gmail.com",
                 },
-                { key: "facebook", label: "Facebook URL", defaultValue: "" },
-                { key: "instagram", label: "Instagram URL", defaultValue: "" },
-                { key: "twitter", label: "Twitter URL", defaultValue: "" },
+                { key: "facebook", label: "Facebook URL", defaultValue: "https://facebook.com/zanov" },
+                { key: "instagram", label: "Instagram URL", defaultValue: "https://instagram.com/zanov" },
+                { key: "twitter", label: "Twitter URL", defaultValue: "https://twitter.com/zanov" },
             ],
         },
     };
+    
 
     return (
         <AppLayout title="Landing Page CMS">

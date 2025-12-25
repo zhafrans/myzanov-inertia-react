@@ -6,25 +6,25 @@ export default function Contact({ contact, footer }) {
     const contactItems = [
         {
             icon: MapPin,
-            label: "Address",
+            label: "Alamat",
             value:
                 contact?.address ||
-                "Jl. Contoh No. 123, Jakarta Selatan, DKI Jakarta 12345",
+                "Jl. Arsadimeja RT 3/4 Teluk, Purwokerto Selatan, Banyumas, Jawa Tengah",
         },
         {
             icon: Phone,
-            label: "Phone",
-            value: contact?.phone || "+62 123 456 7890",
+            label: "Telepon",
+            value: contact?.phone || "+6281329235551",
         },
         {
             icon: Mail,
             label: "Email",
-            value: contact?.email || "info@zanovshoes.com",
+            value: contact?.email || "zanovshoes@gmail.com",
         },
     ];
 
     return (
-        <LandingPageLayout title="Contact - ZANOV SHOES" footer={footer}>
+        <LandingPageLayout title="Kontak - ZANOV SHOES" footer={footer}>
             <div className="bg-gray-50 min-h-screen py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.h1
@@ -34,11 +34,11 @@ export default function Contact({ contact, footer }) {
                         className="text-4xl font-bold mb-8 text-center"
                         style={{ color: "#FF5C00" }}
                     >
-                        Contact Us
+                        Hubungi Kami
                     </motion.h1>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Contact Info */}
+                        {/* Informasi Kontak */}
                         <motion.div
                             initial={{ opacity: 0, x: -50 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -46,7 +46,7 @@ export default function Contact({ contact, footer }) {
                             className="bg-white rounded-lg shadow-lg p-8"
                         >
                             <h2 className="text-2xl font-semibold mb-6">
-                                Get in Touch
+                                Hubungi Kami
                             </h2>
 
                             <div className="space-y-6">
@@ -91,7 +91,7 @@ export default function Contact({ contact, footer }) {
                             </div>
                         </motion.div>
 
-                        {/* Google Maps */}
+                        {/* Peta Google */}
                         <motion.div
                             initial={{ opacity: 0, x: 50 }}
                             animate={{ opacity: 1, x: 0 }}

@@ -22,19 +22,19 @@ class LandingPageController extends Controller
 
         // Get default values if not set
         $heroTitle = $contents->get('home_hero')?->where('key', 'title')->first()?->value ?? 'ZANOV SHOES';
-        $heroSubtitle = $contents->get('home_hero')?->where('key', 'subtitle')->first()?->value ?? 'Premium Quality Footwear';
+        $heroSubtitle = $contents->get('home_hero')?->where('key', 'subtitle')->first()?->value ?? 'Crafted With Quality, Worn With Pride.';
         $heroImageValue = $contents->get('home_hero')?->where('key', 'background_image')->first()?->value;
         // If value is a file path (starts with 'landing/'), use Storage URL, otherwise use as-is (for external URLs)
         $heroImage = $heroImageValue 
             ? (str_starts_with($heroImageValue, 'landing/') ? Storage::url($heroImageValue) : $heroImageValue)
             : 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1920&q=80';
-        $aboutTitle = $contents->get('home_about')?->where('key', 'title')->first()?->value ?? 'About ZANOV';
+        $aboutTitle = $contents->get('home_about')?->where('key', 'title')->first()?->value ?? 'Tentang ZANOV';
         $aboutDescription = $contents->get('home_about')?->where('key', 'description')->first()?->value ?? 'ZANOV Shoes adalah brand sepatu premium yang menghadirkan kualitas terbaik dengan desain yang elegan dan modern.';
         
         $footer = [
-            'address' => $contents->get('footer')?->where('key', 'address')->first()?->value ?? 'Jl. Contoh No. 123, Jakarta',
-            'phone' => $contents->get('footer')?->where('key', 'phone')->first()?->value ?? '+62 123 456 7890',
-            'email' => $contents->get('footer')?->where('key', 'email')->first()?->value ?? 'info@zanovshoes.com',
+            'address' => $contents->get('footer')?->where('key', 'address')->first()?->value ?? 'Jl. Kejepit RT 3/4 Teluk, Purwokerto Selatan, Banyumas, Jawa Tengah',
+            'phone' => $contents->get('footer')?->where('key', 'phone')->first()?->value ?? '+6281329235551',
+            'email' => $contents->get('footer')?->where('key', 'email')->first()?->value ?? 'zanovshoes@gmail.com',
             'facebook' => $contents->get('footer')?->where('key', 'facebook')->first()?->value ?? '',
             'instagram' => $contents->get('footer')?->where('key', 'instagram')->first()?->value ?? '',
             'twitter' => $contents->get('footer')?->where('key', 'twitter')->first()?->value ?? '',
@@ -133,10 +133,10 @@ class LandingPageController extends Controller
             ->get();
 
         $contactData = [
-            'address' => $contents->where('key', 'address')->first()?->value ?? 'Jl. Contoh No. 123, Jakarta Selatan, DKI Jakarta 12345',
-            'phone' => $contents->where('key', 'phone')->first()?->value ?? '+62 123 456 7890',
-            'email' => $contents->where('key', 'email')->first()?->value ?? 'info@zanovshoes.com',
-            'map_url' => $contents->where('key', 'map_url')->first()?->value ?? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3966.3694!2d106.8167!3d-6.2088!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMTInMzEuNiJTIDEwNsKwNDknMDAuMSJF!5e0!3m2!1sen!2sid!4v1234567890123!5m2!1sen!2sid',
+            'address' => $contents->where('key', 'address')->first()?->value ?? 'Jl. Arsadimeja RT 3/4 Teluk, Purwokerto Selatan, Banyumas, Jawa Tengah',
+            'phone' => $contents->where('key', 'phone')->first()?->value ?? '+6281329235551',
+            'email' => $contents->where('key', 'email')->first()?->value ?? 'zanovshoes@gmail.com',
+            'map_url' => $contents->where('key', 'map_url')->first()?->value ?? 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d989.0257930239334!2d109.24573047947474!3d-7.453837290060176!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e655d5e6194e779%3A0x58a2a88b1639fa7c!2sBintang%20Shoes%20Purwokerto!5e0!3m2!1sen!2sid!4v1766669619271!5m2!1sen!2sid',
         ];
 
         $footer = $this->getFooter();
@@ -234,9 +234,9 @@ class LandingPageController extends Controller
             ->get();
 
         return [
-            'address' => $contents->where('key', 'address')->first()?->value ?? 'Jl. Contoh No. 123, Jakarta',
-            'phone' => $contents->where('key', 'phone')->first()?->value ?? '+62 123 456 7890',
-            'email' => $contents->where('key', 'email')->first()?->value ?? 'info@zanovshoes.com',
+            'address' => $contents->where('key', 'address')->first()?->value ?? 'Jl. Arsadimeja RT 3/4 Teluk, Purwokerto Selatan, Banyumas, Jawa Tengah',
+            'phone' => $contents->where('key', 'phone')->first()?->value ?? '+6281329235551',
+            'email' => $contents->where('key', 'email')->first()?->value ?? 'zanovshoes@gmail.com',
             'facebook' => $contents->where('key', 'facebook')->first()?->value ?? '',
             'instagram' => $contents->where('key', 'instagram')->first()?->value ?? '',
             'twitter' => $contents->where('key', 'twitter')->first()?->value ?? '',

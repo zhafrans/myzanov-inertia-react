@@ -3,7 +3,7 @@ import { motion } from "framer-motion"
 
 export default function About({ about, footer }) {
     return (
-        <LandingPageLayout title="About - ZANOV SHOES" footer={footer}>
+        <LandingPageLayout title="Tentang - ZANOV SHOES" footer={footer}>
             <div className="bg-gray-50 min-h-screen py-12">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div
@@ -19,7 +19,7 @@ export default function About({ about, footer }) {
                             className="text-4xl font-bold mb-6 text-center"
                             style={{ color: "#FF5C00" }}
                         >
-                            {about?.title || "About ZANOV"}
+                            {about?.title || "Tentang ZANOV"}
                         </motion.h1>
 
                         <div className="prose prose-lg max-w-none">
@@ -41,7 +41,7 @@ export default function About({ about, footer }) {
                                 style={{ backgroundColor: "#FFF5E6" }}
                             >
                                 <h2 className="text-2xl font-semibold mb-4" style={{ color: "#FF5C00" }}>
-                                    Our Mission
+                                    Misi Kami
                                 </h2>
                                 <p className="text-gray-700">
                                     {about?.mission || "Misi kami adalah menghadirkan sepatu berkualitas premium dengan desain yang timeless dan nyaman digunakan sehari-hari."}
@@ -57,7 +57,7 @@ export default function About({ about, footer }) {
                                 style={{ backgroundColor: "#FFF5E6" }}
                             >
                                 <h2 className="text-2xl font-semibold mb-4" style={{ color: "#FF5C00" }}>
-                                    Our Vision
+                                    Visi Kami
                                 </h2>
                                 <p className="text-gray-700">
                                     {about?.vision || "Menjadi brand sepatu terdepan di Indonesia yang dikenal dengan kualitas, inovasi, dan pelayanan terbaik."}
@@ -66,8 +66,8 @@ export default function About({ about, footer }) {
 
                             <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {[
-                                    { icon: "👟", title: "Quality First", desc: "Kami hanya menggunakan bahan berkualitas tinggi untuk setiap produk" },
-                                    { icon: "🎯", title: "Customer Focus", desc: "Kepuasan pelanggan adalah prioritas utama kami" },
+                                    { icon: "👟", title: "Kualitas Utama", desc: "Kami hanya menggunakan bahan berkualitas tinggi untuk setiap produk" },
+                                    { icon: "🎯", title: "Fokus Pelanggan", desc: "Kepuasan pelanggan adalah prioritas utama kami" },
                                 ].map((item, index) => (
                                     <motion.div
                                         key={index}
@@ -98,4 +98,3 @@ export default function About({ about, footer }) {
         </LandingPageLayout>
     )
 }
-

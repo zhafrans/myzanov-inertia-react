@@ -19,7 +19,7 @@ class OpenRouterService
         $this->siteName = env('OPENROUTER_SITE_NAME');
     }
 
-    public function chat(string $text, string $model = 'nex-agi/deepseek-v3.1-nex-n1:free'): string
+    public function chat(string $text, string $model = 'allenai/olmo-3.1-32b-think:free'): string
     {
         try {
             Log::info('OpenRouter chat attempt', [

@@ -36,7 +36,7 @@ export default function Catalogue({ products, filters, footer }) {
     }, [search, gender, material, sortBy, sortOrder])
 
     return (
-        <LandingPageLayout title="Catalogue - ZANOV SHOES" footer={footer}>
+        <LandingPageLayout title="Katalog - ZANOV SHOES" footer={footer}>
             <div className="bg-gray-50 min-h-screen py-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.h1
@@ -46,10 +46,10 @@ export default function Catalogue({ products, filters, footer }) {
                         className="text-4xl font-bold mb-8 text-center"
                         style={{ color: "#FF5C00" }}
                     >
-                        Our Products
+                        Produk Kami
                     </motion.h1>
 
-                    {/* Filters */}
+                    {/* Filter */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -58,18 +58,18 @@ export default function Catalogue({ products, filters, footer }) {
                     >
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <Input
-                                placeholder="Search by name..."
+                                placeholder="Cari berdasarkan nama..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="md:col-span-2"
                             />
 
-                            <Select value={gender || "all"} onValueChange={(value) => setGender(value === "all" ? "" : value)}>
+                            <Select value={gender || "semua"} onValueChange={(value) => setGender(value === "semua" ? "" : value)}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="All Gender" />
+                                    <SelectValue placeholder="Semua Gender" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="all">All Gender</SelectItem>
+                                    <SelectItem value="semua">Semua Gender</SelectItem>
                                     <SelectItem value="Pria">Pria</SelectItem>
                                     <SelectItem value="Wanita">Wanita</SelectItem>
                                 </SelectContent>
@@ -87,20 +87,20 @@ export default function Catalogue({ products, filters, footer }) {
                                 setSortOrder(order)
                             }}>
                                 <SelectTrigger>
-                                    <SelectValue placeholder="Sort by" />
+                                    <SelectValue placeholder="Urutkan berdasarkan" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="created_at_desc">Newest</SelectItem>
-                                    <SelectItem value="cash_price_asc">Cash Price: Low to High</SelectItem>
-                                    <SelectItem value="cash_price_desc">Cash Price: High to Low</SelectItem>
-                                    <SelectItem value="credit_price_asc">Credit Price: Low to High</SelectItem>
-                                    <SelectItem value="credit_price_desc">Credit Price: High to Low</SelectItem>
+                                    <SelectItem value="created_at_desc">Terbaru</SelectItem>
+                                    <SelectItem value="cash_price_asc">Harga Cash: Rendah ke Tinggi</SelectItem>
+                                    <SelectItem value="cash_price_desc">Harga Cash: Tinggi ke Rendah</SelectItem>
+                                    <SelectItem value="credit_price_asc">Harga Kredit: Rendah ke Tinggi</SelectItem>
+                                    <SelectItem value="credit_price_desc">Harga Kredit: Tinggi ke Rendah</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </motion.div>
 
-                    {/* Products Grid */}
+                    {/* Grid Produk */}
                     {products && products.data && products.data.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {products.data.map((product, index) => (
@@ -120,7 +120,7 @@ export default function Catalogue({ products, filters, footer }) {
                                         />
                                     ) : (
                                         <div className="w-full h-64 bg-gray-200 flex items-center justify-center">
-                                            <span className="text-gray-400">No Image</span>
+                                            <span className="text-gray-400">Tidak Ada Gambar</span>
                                         </div>
                                     )}
 
@@ -128,7 +128,7 @@ export default function Catalogue({ products, filters, footer }) {
                                         <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                                         <div className="text-sm text-gray-600 space-y-1 mb-3">
                                             {product.category && (
-                                                <p>Category: {product.category}</p>
+                                                <p>Kategori: {product.category}</p>
                                             )}
                                             {product.gender && (
                                                 <p>Gender: {product.gender}</p>
@@ -145,7 +145,7 @@ export default function Catalogue({ products, filters, footer }) {
                                             )}
                                             {product.credit_price && (
                                                 <p className="font-semibold" style={{ color: "#FF5C00" }}>
-                                                    Credit: Rp {Number(product.credit_price).toLocaleString("id-ID")}
+                                                    Kredit: Rp {Number(product.credit_price).toLocaleString("id-ID")}
                                                 </p>
                                             )}
                                         </div>
@@ -155,16 +155,16 @@ export default function Catalogue({ products, filters, footer }) {
                         </div>
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 text-lg">No products found</p>
+                            <p className="text-gray-500 text-lg">Tidak ada produk yang ditemukan</p>
                         </div>
                     )}
 
-                    {/* Pagination */}
+                    {/* Paginasi */}
                     {products && products.links && products.links.length > 1 && (
                         <div className="mt-8 flex justify-center gap-2">
                             {products.links.map((link, index) => {
-                                const isPrevious = link.label.includes('Previous') || link.label.includes('pagination.previous') || link.label.includes('&laquo;')
-                                const isNext = link.label.includes('Next') || link.label.includes('pagination.next') || link.label.includes('&raquo;')
+                                const isPrevious = link.label.includes('Sebelumnya') || link.label.includes('pagination.previous') || link.label.includes('&laquo;')
+                                const isNext = link.label.includes('Berikutnya') || link.label.includes('pagination.next') || link.label.includes('&raquo;')
                                 
                                 return (
                                     <Button
@@ -192,4 +192,3 @@ export default function Catalogue({ products, filters, footer }) {
         </LandingPageLayout>
     )
 }
-

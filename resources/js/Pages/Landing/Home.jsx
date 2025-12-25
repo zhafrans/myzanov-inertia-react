@@ -6,8 +6,8 @@ import { motion } from "framer-motion"
 
 export default function Home({ hero, about, footer }) {
     return (
-        <LandingPageLayout title="Home - ZANOV SHOES" footer={footer}>
-            {/* Hero Section */}
+        <LandingPageLayout title="Beranda - ZANOV SHOES" footer={footer}>
+            {/* Bagian Hero */}
             <section
                 className="relative h-screen flex items-center justify-center bg-cover bg-center"
                 style={{
@@ -17,7 +17,7 @@ export default function Home({ hero, about, footer }) {
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-black/60"></div>
 
-                {/* Content */}
+                {/* Konten */}
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -40,7 +40,7 @@ export default function Home({ hero, about, footer }) {
                         className="text-xl md:text-2xl text-white mb-8"
                         style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.8)" }}
                     >
-                        {hero?.subtitle || "Premium Quality Footwear"}
+                        {hero?.subtitle || "Sepatu Berkualitas Premium"}
                     </motion.p>
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -58,7 +58,7 @@ export default function Home({ hero, about, footer }) {
                                     color: "white",
                                 }}
                             >
-                                Explore Collection
+                                Jelajahi Koleksi
                                 <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                         </Link>
@@ -66,7 +66,7 @@ export default function Home({ hero, about, footer }) {
                 </motion.div>
             </section>
 
-            {/* About Section */}
+            {/* Bagian Tentang */}
             <motion.section
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
@@ -83,7 +83,7 @@ export default function Home({ hero, about, footer }) {
                         className="text-center mb-12"
                     >
                         <h2 className="text-4xl font-bold mb-4" style={{ color: "#FF5C00" }}>
-                            {about?.title || "About ZANOV"}
+                            {about?.title || "Tentang ZANOV"}
                         </h2>
                         <p className="text-lg text-gray-600 max-w-3xl mx-auto">
                             {about?.description || "ZANOV Shoes adalah brand sepatu premium yang menghadirkan kualitas terbaik dengan desain yang elegan dan modern."}
@@ -92,9 +92,9 @@ export default function Home({ hero, about, footer }) {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                         {[
-                            { icon: "👟", title: "Premium Quality", desc: "Menggunakan bahan berkualitas tinggi untuk kenyamanan maksimal" },
-                            { icon: "🎨", title: "Modern Design", desc: "Desain yang elegan dan timeless untuk gaya yang selalu up-to-date" },
-                            { icon: "💎", title: "Affordable Price", desc: "Kualitas premium dengan harga yang terjangkau untuk semua kalangan" },
+                            { icon: "👟", title: "Kualitas Premium", desc: "Menggunakan bahan berkualitas tinggi untuk kenyamanan maksimal" },
+                            { icon: "🎨", title: "Desain Modern", desc: "Desain yang elegan dan timeless untuk gaya yang selalu up-to-date" },
+                            { icon: "💎", title: "Harga Terjangkau", desc: "Kualitas premium dengan harga yang terjangkau untuk semua kalangan" },
                         ].map((item, index) => (
                             <motion.div
                                 key={index}
@@ -123,4 +123,3 @@ export default function Home({ hero, about, footer }) {
         </LandingPageLayout>
     )
 }
-
