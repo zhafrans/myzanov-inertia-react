@@ -223,6 +223,28 @@ export default function ActivityLogsTable({ logs, loading }) {
                                     <p className="text-xs line-clamp-2">
                                         {log.description}
                                     </p>
+                                    {log.old_values && log.new_values && Object.keys(log.new_values).length > 0 && (
+                                        <details className="mt-2 text-xs text-muted-foreground">
+                                            <summary className="cursor-pointer hover:text-foreground font-medium">
+                                                View Changes
+                                            </summary>
+                                            <div className="mt-2 space-y-2 p-2 bg-muted rounded">
+                                                {Object.keys(log.new_values).map(key => (
+                                                    <div key={key} className="space-y-1">
+                                                        <span className="font-medium text-foreground">{key}:</span>
+                                                        <div className="pl-2 space-y-0.5">
+                                                            <div className="line-through text-red-500 text-xs">
+                                                                {log.old_values[key] ? JSON.stringify(log.old_values[key]) : '(empty)'}
+                                                            </div>
+                                                            <div className="text-green-600 text-xs">
+                                                                → {JSON.stringify(log.new_values[key])}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </details>
+                                    )}
                                 </div>
                             </div>
 
