@@ -54,7 +54,7 @@ class ProductController extends Controller
             'material' => 'nullable|string|max:255',
             'cash_price' => 'nullable|numeric|min:0',
             'credit_price' => 'nullable|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
         ]);
 
         // Handle image upload
@@ -90,7 +90,7 @@ class ProductController extends Controller
             'material' => 'nullable|string|max:255',
             'cash_price' => 'nullable|numeric|min:0',
             'credit_price' => 'nullable|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp',
         ]);
 
         $oldValues = $product->toArray();
