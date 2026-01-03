@@ -1738,6 +1738,7 @@ class SalesController extends Controller
             'size' => $item->size ?? '-',
             'harga' => $hargaNumeric,
             'ket' => $sale->note ?? '',
+            'payment_type' => $sale->payment_type ?? '',
             'is_tempo' => $sale->is_tempo === 'yes' || $sale->payment_type === 'cash_tempo',
             'ang1' => $firstInstallment ? (float) $firstInstallment->installment_amount : 0,
             'tgl_ang1' => $firstInstallment ? Carbon::parse($firstInstallment->payment_date)->format('Y-m-d') : '',

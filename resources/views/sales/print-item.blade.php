@@ -134,7 +134,7 @@
         <div class="kode">{{ $printData['nama_produk'] }} - {{ $printData['warna'] }} - {{ $printData['size'] }}</div>
         <div class="harga">{{ number_format($printData['harga'], 0, ',', '.') }}</div>
         <div class="tg-ang">
-            @if($printData['is_tempo'])
+            @if($printData['payment_type'] === 'cash_tempo')
                 CASH TEMPO
             @endif
         </div>
