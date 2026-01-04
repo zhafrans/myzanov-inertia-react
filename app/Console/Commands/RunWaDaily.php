@@ -81,8 +81,8 @@ class RunWaDaily extends Command
     {
         try {
             // Set tanggal kemarin
-            // $this->date = Carbon::yesterday();
-            $this->date = Carbon::create(2025, 12, 10);
+            $this->date = Carbon::yesterday();
+            // $this->date = Carbon::create(2025, 12, 10);
             $date = $this->date;
 
             $sales = Sales::with([

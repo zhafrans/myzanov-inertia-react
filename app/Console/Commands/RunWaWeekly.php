@@ -88,8 +88,8 @@ class RunWaWeekly extends Command
     {
         try {
             // Set tanggal hari ini
-            // $today = Carbon::today();
-            $today = Carbon::create(2025, 12, 10);
+            $today = Carbon::today();
+            // $today = Carbon::create(2025, 12, 10);
 
             // Hitung minggu kemarin (Senin - Sabtu minggu lalu)
             $lastWeekStart = $today->copy()->subWeek()->startOfWeek(Carbon::MONDAY); // Senin minggu lalu
