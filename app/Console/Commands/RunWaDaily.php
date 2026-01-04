@@ -137,12 +137,14 @@ class RunWaDaily extends Command
             }
 
             // Dapatkan data summary
-            $additionalContext = $this->getYesterdaySummaryData($date);
+            // $additionalContext = $this->getYesterdaySummaryData($date);
 
             // Kirim summary data
             $yesterdaySummaryResponse = $this->yesterdaySummary();
             $this->info("Pesan wa terkirim: " . json_encode($yesterdaySummaryResponse));
 
+            // Comment AI section - hanya kirim yesterday formatted
+            /*
             // Kirim summary penjualan menggunakan AI
             $question = 
                 "Tolong buatkan ringkasan penjualan kemarin tanggal {$yesterdayFormatted} untuk dikirim ke grup WhatsApp rekan-rekan ZANOV Shoes Purwokerto.\n\n
@@ -179,6 +181,7 @@ class RunWaDaily extends Command
             // Kirim summary via WA
             $responseSummary = $this->waService->sendGroup("📝 Ringkasan Penjualan Kemarin $yesterdayFormatted:\n\n" . $summary);
             $this->info("Pesan summary AI terkirim: " . json_encode($responseSummary));
+            */
 
             return 0;
         } catch (\Exception $e) {
