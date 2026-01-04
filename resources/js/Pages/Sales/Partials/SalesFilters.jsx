@@ -104,7 +104,7 @@ export default function SalesFilters({ filters, setFilters, sellers = [] }) {
                 </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-80 space-y-4 max-h-[80vh] overflow-y-auto">
+            <PopoverContent className="w-80 space-y-4 max-h-[70vh] overflow-y-auto">
                 {/* Date Range Filter */}
                 <div className="space-y-3">
                     <p className="text-sm font-semibold">Rentang Tanggal</p>
