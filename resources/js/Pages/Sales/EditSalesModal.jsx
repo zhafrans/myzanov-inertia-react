@@ -491,7 +491,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                     </div>
 
                     {/* Grid untuk Payment Type, Status, Transaction Date */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                   {/*  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="payment_type">
                                 Tipe Pembayaran
@@ -542,7 +542,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                                 className="bg-muted font-bold"
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     <div className="space-y-2">
                         <Label htmlFor="transaction_at">
@@ -587,7 +587,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                     )}
 
                     {/* Credit-specific fields */}
-                    {form.payment_type === "credit" && (
+                   {/*  {form.payment_type === "credit" && (
                         <div className="space-y-3 border-t pt-3">
                             <div className="space-y-2">
                                 <Label htmlFor="installment_months">
@@ -635,10 +635,10 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                                 </p>
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     {/* DP Section - Show for credit and cash_tempo */}
-                    {(form.payment_type === "credit" ||
+                    {/* {(form.payment_type === "credit" ||
                         form.payment_type === "cash_tempo") && (
                         <div className="space-y-3 border-t pt-3">
                             <div className="flex items-center space-x-2">
@@ -693,10 +693,10 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                                 </div>
                             )}
                         </div>
-                    )}
+                    )} */}
 
                     {/* Tempo Date - Show for credit and cash_tempo */}
-                    {(form.payment_type === "credit" ||
+                    {/* {(form.payment_type === "credit" ||
                         form.payment_type === "cash_tempo") && (
                         <div className="space-y-2">
                             <Label>Jatuh Tempo</Label>
@@ -715,7 +715,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                                       } bulan dari tanggal transaksi`}
                             </p>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Note */}
                     <div className="space-y-2">

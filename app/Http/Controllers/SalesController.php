@@ -181,6 +181,7 @@ class SalesController extends Controller
                     'village_id' => $sale->village_id,
                     'payment_type' => $sale->payment_type,
                     'is_tempo' => $sale->is_tempo,
+                    'is_return' => $sale->is_return ?? false,
                     'tempo_at' => $sale->tempo_at,
                     'note' => $sale->note,
                     'seller_id' => $sale->seller_id,
@@ -419,6 +420,7 @@ class SalesController extends Controller
                 'collector_id' => $installment->collector_id,
                 'payment_date' => Carbon::parse($installment->payment_date)->format('Y-m-d'),
                 'installment_amount' => (float) $installment->installment_amount,
+                'is_dp' => $installment->is_dp ?? false,
             ];
         });
 
@@ -475,6 +477,7 @@ class SalesController extends Controller
                 'transaction_at' => Carbon::parse($sale->transaction_at)->format('Y-m-d H:i:s'),
                 'transaction_date' => Carbon::parse($sale->transaction_at)->format('d-m-Y'),
                 'is_tempo' => $sale->is_tempo,
+                'is_return' => $sale->is_return ?? false,
                 'tempo_at' => $sale->tempo_at ? Carbon::parse($sale->tempo_at)->format('Y-m-d') : null,
                 'tempo_at_formatted' => $sale->tempo_at ? Carbon::parse($sale->tempo_at)->format('d-m-Y') : null,
                 'note' => $sale->note,
@@ -1746,5 +1749,56 @@ class SalesController extends Controller
         ];
 
         return view('sales.print-item', compact('printData'));
+    }
+
+    /**
+     * Mark a sale as returned.
+     */
+    public function return(string $id)
+    {
+        $sale = Sales::findOrFail($id);
+        
+        DB::beginTransaction();
+
+        try {
+            // Update is_return status and returned_at timestamp
+            $sale->update([
+                'is_return' => true,
+                'returned_at' => now(),
+            ]);
+
+            // Log activity
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'update',
+                'module' => 'sales',
+                'description' => "Menandai penjualan sebagai dikembalikan: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $sale->id,
+                'model_type' => Sales::class,
+                'new_values' => [
+                'is_return' => true,
+                'returned_at' => now(),
+            ],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Barang berhasil ditandai sebagai dikembalikan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'update',
+                'module' => 'sales',
+                'description' => "Gagal menandai penjualan sebagai dikembalikan {$sale->invoice}: " . $e->getMessage(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            return back()->with('error', 'Failed to mark item as returned: ' . $e->getMessage());
+        }
     }
 }

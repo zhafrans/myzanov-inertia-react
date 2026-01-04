@@ -25,6 +25,8 @@ return new class extends Migration
             $table->string('status');
             $table->timestamp('transaction_at');
             $table->string('is_tempo')->nullable();
+            $table->boolean('is_return')->nullable();
+            $table->timestamp('returned_at')->nullable();
             $table->timestamp('tempo_at')->nullable();
             $table->text('note')->nullable();
             $table->foreignId('user_id')->nullable()->constrained('users');

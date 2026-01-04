@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/image', [\App\Http\Controllers\ProfileController::class, 'updateImage'])->name('profile.image.update');
     Route::put('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
 
-    Route::get(
+   Route::get(
         '/dashboard',
         fn() =>
         Inertia::render('Dashboard/Index')
@@ -89,6 +89,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit')->middleware('role:' . UserRole::SuperAdmin->value);
     Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update')->middleware('role:' . UserRole::SuperAdmin->value);
     Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy')->middleware('role:' . UserRole::SuperAdmin->value);
+    Route::patch('/sales/{id}/return', [SalesController::class, 'return'])->name('sales.return')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
     // Installment routes
     Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);

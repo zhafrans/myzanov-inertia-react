@@ -25,21 +25,28 @@ class DashboardController extends Controller
         $endOfYear = now()->endOfYear();
 
         // 1. Summary Cards
-        // Total Tanggungan (outstanding amount dari semua sales)
-        $totalTanggungan = SalesOutstanding::sum('outstanding_amount');
+        // Total Tanggungan (outstanding amount dari semua sales yang bukan returned)
+        $totalTanggungan = Sales::whereNull('is_return')
+            ->whereHas('outstanding')
+            ->join('sales_outstandings', 'sales.id', '=', 'sales_outstandings.sale_id')
+            ->sum('sales_outstandings.outstanding_amount');
 
-        // Total Terjual (total quantity dari semua sales items)
-        $totalTerjual = SalesItem::sum('quantity');
+        // Total Terjual (total quantity dari semua sales items yang bukan returned)
+        $totalTerjual = Sales::whereNull('is_return')
+            ->join('sales_items', 'sales.id', '=', 'sales_items.sale_id')
+            ->sum('sales_items.quantity');
 
-        // Belum Lunas (sales dengan outstanding > 0)
-        $belumLunas = Sales::whereHas('outstanding', function ($query) {
-            $query->where('outstanding_amount', '>', 0);
-        })->count();
+        // Belum Lunas (sales dengan outstanding > 0 yang bukan returned)
+        $belumLunas = Sales::whereNull('is_return')
+            ->whereHas('outstanding', function ($query) {
+                $query->where('outstanding_amount', '>', 0);
+            })->count();
 
-        // Sudah Lunas (sales dengan outstanding <= 0)
-        $sudahLunas = Sales::whereHas('outstanding', function ($query) {
-            $query->where('outstanding_amount', '<=', 0);
-        })->count();
+        // Sudah Lunas (sales dengan outstanding <= 0 yang bukan returned)
+        $sudahLunas = Sales::whereNull('is_return')
+            ->whereHas('outstanding', function ($query) {
+                $query->where('outstanding_amount', '<=', 0);
+            })->count();
 
         // Default: bulan ini
         $startDate = now()->startOfMonth();
@@ -96,17 +103,19 @@ class DashboardController extends Controller
      */
     private function getMonthlySalesData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
-        // Ambil semua seller yang aktif
-        $sellers = User::whereHas('sales')->get();
+        // Ambil semua seller yang aktif (exclude returned sales)
+        $sellers = User::whereHas('sales', function ($query) {
+            $query->whereNull('is_return');
+        })->get();
 
         // Array nama bulan singkat
         $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
 
         // Jika all time, ambil semua data dan group per bulan
         if ($allTime) {
-            // Ambil range tanggal dari sales pertama sampai terakhir
-            $firstSale = Sales::orderBy('transaction_at', 'asc')->first();
-            $lastSale = Sales::orderBy('transaction_at', 'desc')->first();
+            // Ambil range tanggal dari sales pertama sampai terakhir (exclude returned)
+            $firstSale = Sales::whereNull('is_return')->orderBy('transaction_at', 'asc')->first();
+            $lastSale = Sales::whereNull('is_return')->orderBy('transaction_at', 'desc')->first();
             
             if (!$firstSale || !$lastSale) {
                 return [
@@ -197,6 +206,7 @@ class DashboardController extends Controller
 
             foreach ($dates as $dateRange) {
                 $query = Sales::where('seller_id', $seller->id)
+                    ->whereNull('is_return')
                     ->whereBetween('transaction_at', [$dateRange['start'], $dateRange['end']]);
                 
                 // Apply payment status filter if specified
@@ -235,6 +245,7 @@ class DashboardController extends Controller
             'users.name',
             DB::raw('COUNT(sales.id) as total_sales')
         )
+            ->whereNull('is_return')
             ->join('users', 'sales.seller_id', '=', 'users.id');
 
         if (!$allTime && $startDate && $endDate) {
@@ -268,107 +279,110 @@ class DashboardController extends Controller
     private function getSalesByPaymentTypeData($startDate, $endDate, $allTime = false, $paymentStatus = null)
     {
         $query = Sales::select(
-            'sales.payment_type as name',
-            DB::raw('COUNT(sales.id) as total_sales')
-        );
-
-        if (!$allTime && $startDate && $endDate) {
-            $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
-        }
-        
-        // Apply payment status filter if specified
-        if ($paymentStatus === 'paid') {
-            $query->whereHas('outstanding', function ($q) {
-                $q->where('outstanding_amount', '<=', 0);
-            });
-        } elseif ($paymentStatus === 'unpaid') {
-            $query->whereHas('outstanding', function ($q) {
-                $q->where('outstanding_amount', '>', 0);
-            });
-        }
-
-        $salesByPaymentType = $query->groupBy('sales.payment_type')
-            ->orderByDesc('total_sales')
-            ->get();
-
-        return [
-            'labels' => $salesByPaymentType->pluck('name')->toArray(),
-            'values' => $salesByPaymentType->pluck('total_sales')->toArray(),
-        ];
-    }
-
-    /**
-     * Get sales data by status (for pie chart)
-     */
-    private function getSalesByStatusData($startDate, $endDate, $allTime = false, $paymentStatus = null)
-    {
-        $query = Sales::select(
-            'sales.status as name',
-            DB::raw('COUNT(sales.id) as total_sales')
-        );
-
-        if (!$allTime && $startDate && $endDate) {
-            $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
-        }
-        
-        // Apply payment status filter if specified
-        if ($paymentStatus === 'paid') {
-            $query->whereHas('outstanding', function ($q) {
-                $q->where('outstanding_amount', '<=', 0);
-            });
-        } elseif ($paymentStatus === 'unpaid') {
-            $query->whereHas('outstanding', function ($q) {
-                $q->where('outstanding_amount', '>', 0);
-            });
-        }
-
-        $salesByStatus = $query->groupBy('sales.status')
-            ->orderByDesc('total_sales')
-            ->get();
-
-        return [
-            'labels' => $salesByStatus->pluck('name')->toArray(),
-            'values' => $salesByStatus->pluck('total_sales')->toArray(),
-        ];
-    }
-
-    /**
-     * Get top product data
-     */
-    private function getTopProductData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
-    {
-        $query = SalesItem::select(
-            'sales_items.product_name as name',
-            DB::raw('SUM(sales_items.quantity) as total')
+            'payment_type',
+            DB::raw('COUNT(id) as total')
         )
-            ->join('sales', 'sales_items.sale_id', '=', 'sales.id');
+            ->whereNull('is_return');
 
         if (!$allTime && $startDate && $endDate) {
-            $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+            $query->whereBetween('transaction_at', [$startDate, $endDate]);
         }
         
         // Apply payment status filter if specified
         if ($paymentStatus === 'paid') {
-            $query->whereHas('sale.outstanding', function ($q) {
+            $query->whereHas('outstanding', function ($q) {
                 $q->where('outstanding_amount', '<=', 0);
             });
         } elseif ($paymentStatus === 'unpaid') {
-            $query->whereHas('sale.outstanding', function ($q) {
+            $query->whereHas('outstanding', function ($q) {
                 $q->where('outstanding_amount', '>', 0);
             });
         }
 
-        $topProducts = $query->groupBy('sales_items.product_name')
-            ->orderByDesc('total')
-            ->limit($limit)
-            ->get();
+    $salesByPaymentType = $query->groupBy('payment_type')
+        ->orderByDesc('total')
+        ->get();
 
-        return $topProducts->map(function ($item) {
-            return [
-                'name' => $item->name,
-                'total' => (int) $item->total
-            ];
-        })->toArray();
+    return [
+        'labels' => $salesByPaymentType->pluck('payment_type')->toArray(),
+        'values' => $salesByPaymentType->pluck('total')->toArray(),
+    ];
+}
+
+/**
+ * Get sales data by status (for pie chart)
+ */
+private function getSalesByStatusData($startDate, $endDate, $allTime = false, $paymentStatus = null)
+{
+    $query = Sales::select(
+        'status',
+        DB::raw('COUNT(id) as total')
+    )
+        ->where('is_return', '!=', 1);
+
+    if (!$allTime && $startDate && $endDate) {
+        $query->whereBetween('transaction_at', [$startDate, $endDate]);
+    }
+    
+    // Apply payment status filter if specified
+    if ($paymentStatus === 'paid') {
+        $query->whereHas('outstanding', function ($q) {
+            $q->where('outstanding_amount', '<=', 0);
+        });
+    } elseif ($paymentStatus === 'unpaid') {
+        $query->whereHas('outstanding', function ($q) {
+            $q->where('outstanding_amount', '>', 0);
+        });
+    }
+
+    $salesByStatus = $query->groupBy('status')
+        ->orderByDesc('total')
+        ->get();
+
+    return [
+        'labels' => $salesByStatus->pluck('status')->toArray(),
+        'values' => $salesByStatus->pluck('total')->toArray(),
+    ];
+}
+
+/**
+ * Get top product data
+ */
+private function getTopProductData($startDate, $endDate, $allTime = false, $limit = 5, $paymentStatus = null)
+{
+    $query = SalesItem::select(
+        'product_name as name',
+        DB::raw('SUM(quantity) as total')
+    )
+        ->join('sales', 'sales_items.sale_id', '=', 'sales.id')
+        ->whereNull('sales.is_return');
+
+    if (!$allTime && $startDate && $endDate) {
+        $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
+    }
+    
+    // Apply payment status filter if specified
+    if ($paymentStatus === 'paid') {
+        $query->whereHas('sale.outstanding', function ($q) {
+            $q->where('outstanding_amount', '<=', 0);
+        });
+    } elseif ($paymentStatus === 'unpaid') {
+        $query->whereHas('sale.outstanding', function ($q) {
+            $q->where('outstanding_amount', '>', 0);
+        });
+    }
+
+    $topProducts = $query->groupBy('product_name')
+        ->orderByDesc('total')
+        ->limit($limit)
+        ->get();
+
+    return $topProducts->map(function ($item) {
+        return [
+            'name' => $item->name,
+            'total' => (int) $item->total
+        ];
+    })->toArray();
     }
 
     /**
@@ -381,8 +395,7 @@ class DashboardController extends Controller
             DB::raw('SUM(sales_items.quantity) as total')
         )
             ->join('sales', 'sales_items.sale_id', '=', 'sales.id')
-            ->whereNotNull('sales_items.size')
-            ->where('sales_items.size', '!=', '');
+            ->whereNull('sales.is_return');
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
@@ -422,8 +435,7 @@ class DashboardController extends Controller
             DB::raw('SUM(sales_items.quantity) as total')
         )
             ->join('sales', 'sales_items.sale_id', '=', 'sales.id')
-            ->whereNotNull('sales_items.color')
-            ->where('sales_items.color', '!=', '');
+            ->whereNull('sales.is_return');
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
@@ -463,7 +475,7 @@ class DashboardController extends Controller
             DB::raw('COUNT(sales.id) as total')
         )
             ->join('cities', 'sales.city_id', '=', 'cities.id')
-            ->whereNotNull('city_id');
+            ->whereNull('sales.is_return');
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
@@ -503,7 +515,7 @@ class DashboardController extends Controller
             DB::raw('COUNT(sales.id) as total')
         )
             ->join('subdistricts', 'sales.subdistrict_id', '=', 'subdistricts.id')
-            ->whereNotNull('subdistrict_id');
+            ->whereNull('sales.is_return');
 
         if (!$allTime && $startDate && $endDate) {
             $query->whereBetween('sales.transaction_at', [$startDate, $endDate]);
@@ -587,11 +599,17 @@ class DashboardController extends Controller
      */
     private function getGlobalSummaryData($paymentStatus = null)
     {
-        // Base queries
-        $outstandingQuery = SalesOutstanding::query();
-        $itemQuery = SalesItem::query();
-        $unpaidQuery = Sales::query();
-        $paidQuery = Sales::query();
+        // Base queries dengan filter is_return
+        $outstandingQuery = SalesOutstanding::query()
+            ->whereHas('sale', function ($query) {
+                $query->whereNull('is_return');
+            });
+        $itemQuery = SalesItem::query()
+            ->whereHas('sale', function ($query) {
+                $query->whereNull('is_return');
+            });
+        $unpaidQuery = Sales::query()->whereNull('is_return');
+        $paidQuery = Sales::query()->whereNull('is_return');
         
         // Apply payment status filter if specified
         if ($paymentStatus === 'paid') {
@@ -647,7 +665,7 @@ class DashboardController extends Controller
      */
     private function getSummaryData($year, $month = null)
     {
-        $query = Sales::query();
+        $query = Sales::query()->whereNull('is_return');
 
         if ($year) {
             $query->whereYear('transaction_at', $year);
@@ -686,7 +704,8 @@ class DashboardController extends Controller
      */
     public function getYearOptions()
     {
-        $years = Sales::selectRaw('YEAR(transaction_at) as year')
+        $years = Sales::whereNull('is_return')
+            ->selectRaw('YEAR(transaction_at) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year');

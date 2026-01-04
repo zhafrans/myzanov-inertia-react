@@ -53,6 +53,11 @@ export default function SalesInstallments({
                             <div className="flex justify-between items-start">
                                 <CardTitle className="text-base">
                                     Angsuran {installment.number || index + 1}
+                                    {installment.is_dp && (
+                                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
+                                            DP
+                                        </span>
+                                    )}
                                 </CardTitle>
                                 <Badge variant="outline" className="text-xs">
                                     #{String(index + 1).padStart(2, "0")}

@@ -105,11 +105,22 @@ export default function SalesTableRow({ item, collectors }) {
     return (
         <>
             <TableRow
-                className="cursor-pointer hover:bg-muted/50"
+                className={`cursor-pointer hover:bg-muted/50 ${
+                    item.is_return ? "bg-red-50 hover:bg-red-100" : ""
+                }`}
                 onClick={() => router.visit(route("sales.show", item.id))}
             >
                 <TableCell>{item.card_number}</TableCell>
-                <TableCell>{item.customer_name || "-"}</TableCell>
+                <TableCell>
+                    <div className="flex items-center gap-2">
+                        {item.customer_name || "-"}
+                        {item.is_return && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-400 to-red-600 text-white">
+                                RETURN
+                            </span>
+                        )}
+                    </div>
+                </TableCell>
                 <TableCell>{item.sales}</TableCell>
                 <TableCell>
                     <div className="flex flex-col">
@@ -221,7 +232,7 @@ export default function SalesTableRow({ item, collectors }) {
 
                 {/* Actions */}
                 <TableCell className="flex gap-2">
-                    {canEditSales(user) && (
+                    {!item.is_return && canEditSales(user) && (
                         <Button
                             size="icon"
                             variant="outline"
@@ -233,7 +244,7 @@ export default function SalesTableRow({ item, collectors }) {
                         </Button>
                     )}
 
-                    {item.remaining > 0 && canInputInstallment(user) && (
+                    {!item.is_return && item.remaining > 0 && canInputInstallment(user) && (
                         <Button
                             size="icon"
                             variant="secondary"
@@ -245,7 +256,7 @@ export default function SalesTableRow({ item, collectors }) {
                         </Button>
                     )}
 
-                    {canDeleteSales(user) && (
+                    {!item.is_return && canDeleteSales(user) && (
                         <AlertDialog open={openDelete} onOpenChange={setOpenDelete}>
                             <AlertDialogTrigger asChild>
                                 <Button

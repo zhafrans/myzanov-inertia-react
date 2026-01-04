@@ -2,11 +2,22 @@ import AppLayout from "@/Layouts/AppLayout";
 import SalesDetailInfo from "./Partials/SalesDetailInfo";
 import SalesInstallments from "./Partials/SalesInstallments";
 import { Button } from "@/components/ui/button";
-import { Printer, FilePlus, ArrowLeft, Edit } from "lucide-react";
+import { Printer, FilePlus, ArrowLeft, Edit, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { router, usePage } from "@inertiajs/react";
 import InputInstallmentModal from "./InputInstallmentModal";
 import EditSalesModal from "./EditSalesModal";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { canEditSales, canInputInstallment } from "@/lib/userRoles";
 
 export default function SalesShow() {
@@ -14,6 +25,7 @@ export default function SalesShow() {
     const user = auth.user;
     const [openTagihan, setOpenTagihan] = useState(false);
     const [openEdit, setOpenEdit] = useState(false);
+    const [openReturn, setOpenReturn] = useState(false);
 
     const handlePrint = () => {
         window.print();
@@ -25,6 +37,22 @@ export default function SalesShow() {
 
     const handleEdit = () => {
         setOpenEdit(true);
+    };
+
+    const handleReturn = () => {
+        router.patch(route("sales.return", sale.id), {}, {
+            onSuccess: () => {
+                setOpenReturn(false);
+                router.reload();
+            },
+            onError: () => {
+                console.error("Failed to return item");
+            },
+        });
+    };
+
+    const handleReturnClick = () => {
+        setOpenReturn(true);
     };
 
     // Format data untuk komponen
@@ -56,7 +84,16 @@ export default function SalesShow() {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 -mx-6 md:mx-auto px-6 md:px-0">
+        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6 -mx-6 md:mx-auto px-6 md:px-0 relative">
+            {/* Watermark for returned items - covers entire page */}
+            {sale.is_return && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                    <div className="transform rotate-45 text-red-500 text-8xl font-bold opacity-10 select-none">
+                        RETURNED
+                    </div>
+                </div>
+            )}
+            
             {/* HEADER */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -69,8 +106,13 @@ export default function SalesShow() {
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div className="min-w-0 flex-1">
-                        <h1 className="text-xl md:text-2xl font-bold truncate">
+                        <h1 className="text-xl md:text-2xl font-bold truncate flex items-center gap-2">
                             No Kartu - {sale.card_number || "No Card"}
+                            {sale.is_return && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-400 to-red-600 text-white">
+                                    RETURN
+                                </span>
+                            )}
                         </h1>
                         <p className="text-xs md:text-sm text-muted-foreground truncate">
                             {sale.invoice} | {" "}
@@ -80,7 +122,7 @@ export default function SalesShow() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    {canEditSales(user) && (
+                    {canEditSales(user) && !sale.is_return && (
                         <Button
                             onClick={handleEdit}
                             variant="outline"
@@ -90,6 +132,40 @@ export default function SalesShow() {
                             <Edit className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                             Edit
                         </Button>
+                    )}
+
+                    {canEditSales(user) && !sale.is_return && (
+                        <AlertDialog open={openReturn} onOpenChange={setOpenReturn}>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 flex-1 md:flex-initial text-xs md:text-sm"
+                                >
+                                    <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                                    Return Barang
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Return Barang?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Apakah Anda yakin barang ini di return?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        onClick={handleReturn}
+                                        className="bg-red-600 hover:bg-red-700"
+                                    >
+                                        Return Barang
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
 
                     {/* <Button 
@@ -102,7 +178,7 @@ export default function SalesShow() {
                         Print
                     </Button> */}
 
-                    {!sale.is_lunas && canInputInstallment(user) && (
+                    {!sale.is_lunas && canInputInstallment(user) && !sale.is_return && (
                         <Button
                             onClick={() => setOpenTagihan(true)}
                             variant="secondary"
