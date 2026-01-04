@@ -151,8 +151,36 @@
             <span style="margin-right: 0.5cm">
                 {{ !empty($printData['tgl_ang1']) ? \Carbon\Carbon::parse($printData['tgl_ang1'])->format('d-m-y') : '' }}
             </span>
-            <span style="margin-right: 0.7cm">{{ $printData['coll1'] ?? '' }}</span>
+            <span style="margin-right: 0.7cm">
+                @if(!empty($printData['is_dp']) && $printData['is_dp'])
+                    DP
+                @else
+                    {{ $printData['coll1'] ?? '' }}
+                @endif
+            </span>
         </div>
+        
+        <!-- Tagihan lain jika ada -->
+        @if(!empty($printData['tagihan_lain']) && is_array($printData['tagihan_lain']))
+            @foreach($printData['tagihan_lain'] as $index => $tagihan)
+                <div class="dp" style="top: {{ 11.1 + ($index + 1) * 0.8 }}cm;">
+                    <span style="margin-right: 0.9cm">{{ !empty($tagihan['jumlah']) && $tagihan['jumlah'] > 0 ? number_format($tagihan['jumlah'], 0, ',', '.') : '' }}</span>
+                    <span style="margin-right: 0.5cm">
+                        @if(!empty($tagihan['jumlah']) && $tagihan['jumlah'] > 0)
+                            {{ number_format($tagihan['sisa'] ?? 0, 0, ',', '.') }}
+                        @endif
+                    </span>
+                    <span style="margin-right: 0.5cm">
+                        {{ !empty($tagihan['tanggal']) ? \Carbon\Carbon::parse($tagihan['tanggal'])->format('d-m-y') : '' }}
+                    </span>
+                    <span style="margin-right: 0.7cm">
+                        @if(!empty($tagihan['collector']))
+                            {{ $tagihan['collector'] }}
+                        @endif
+                    </span>
+                </div>
+            @endforeach
+        @endif
         
         <div class="ket">{{ $printData['ket'] }}</div>
     </div>

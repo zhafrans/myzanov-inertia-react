@@ -1726,6 +1726,29 @@ class SalesController extends Controller
         // Get first installment (DP or first payment)
         $firstInstallment = $sale->installments->first();
         
+        // Check if first installment is DP (usually when payment_type is cash_tempo or when it's the first payment)
+        $isDp = false;
+        if ($firstInstallment) {
+            // Consider as DP if it's the first installment and payment type is cash_tempo
+            // or if the installment amount is less than total price (indicating partial payment)
+            $isDp = ($sale->payment_type === 'cash_tempo' && $firstInstallment->installment_amount < $sale->price) ||
+                   ($sale->installments->count() > 1 && $firstInstallment->installment_amount < $sale->price);
+        }
+        
+        // Collect other installments (excluding the first one)
+        $tagihanLain = [];
+        if ($sale->installments->count() > 1) {
+            $otherInstallments = $sale->installments->slice(1); // Skip first installment
+            foreach ($otherInstallments as $installment) {
+                $tagihanLain[] = [
+                    'jumlah' => (float) $installment->installment_amount,
+                    'sisa' => (float) ($sale->price - $sale->installments->sum('installment_amount')),
+                    'tanggal' => $installment->payment_date ? Carbon::parse($installment->payment_date)->format('Y-m-d') : '',
+                    'collector' => $installment->collector ? $installment->collector->name : '',
+                ];
+            }
+        }
+        
         // Format data untuk print
         $hargaNumeric = (float) $sale->price;
         $printData = [
@@ -1743,9 +1766,11 @@ class SalesController extends Controller
             'ket' => $sale->note ?? '',
             'payment_type' => $sale->payment_type ?? '',
             'is_tempo' => $sale->is_tempo === 'yes' || $sale->payment_type === 'cash_tempo',
+            'is_dp' => $isDp,
             'ang1' => $firstInstallment ? (float) $firstInstallment->installment_amount : 0,
-            'tgl_ang1' => $firstInstallment ? Carbon::parse($firstInstallment->payment_date)->format('Y-m-d') : '',
+            'tgl_ang1' => $firstInstallment && $firstInstallment->payment_date ? Carbon::parse($firstInstallment->payment_date)->format('Y-m-d') : '',
             'coll1' => $firstInstallment && $firstInstallment->collector ? $firstInstallment->collector->name : '',
+            'tagihan_lain' => $tagihanLain,
         ];
 
         return view('sales.print-item', compact('printData'));
