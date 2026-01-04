@@ -14,6 +14,7 @@ import {
     LogOut,
     MessageCircle,
     Settings,
+    Calendar,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -125,6 +126,12 @@ export default function MobileBottomNav() {
             label: "WhatsApp Session",
             href: "/whatsapp-session",
             icon: MessageCircle,
+            roles: ["SUPER_ADMIN"],
+        },
+        {
+            label: "WhatsApp Schedules",
+            href: "/wa-schedules",
+            icon: Calendar,
             roles: ["SUPER_ADMIN"],
         },
     ];

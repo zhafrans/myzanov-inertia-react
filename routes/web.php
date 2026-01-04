@@ -8,6 +8,7 @@ use App\Http\Controllers\SalesController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\WaScheduleController;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -128,6 +129,15 @@ Route::middleware('auth')->group(function () {
     // WhatsApp Session - Super Admin only
     Route::get('/whatsapp-session', [\App\Http\Controllers\WhatsAppSessionController::class, 'index'])
         ->name('whatsapp-session.index')
+        ->middleware('role:' . UserRole::SuperAdmin->value);
+
+    // WhatsApp Schedules - Super Admin only
+    Route::get('/wa-schedules', [WaScheduleController::class, 'index'])
+        ->name('wa-schedules.index')
+        ->middleware('role:' . UserRole::SuperAdmin->value);
+    
+    Route::put('/wa-schedules/{waSchedule}', [WaScheduleController::class, 'update'])
+        ->name('wa-schedules.update')
         ->middleware('role:' . UserRole::SuperAdmin->value);
 
    Route::middleware('role:' . UserRole::SuperAdmin->value)

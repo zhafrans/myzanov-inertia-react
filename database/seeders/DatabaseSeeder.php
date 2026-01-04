@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             ProvinceSeeder::class,
             CitySeeder::class,
             SubdistrictSeeder::class,
+            WaScheduleSeeder::class,
             // VillageSeeder::class,
         ]);
     }

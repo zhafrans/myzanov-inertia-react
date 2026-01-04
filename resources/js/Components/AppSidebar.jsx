@@ -15,6 +15,7 @@ import {
     AlertCircle,
     ChevronRight,
     MessageCircle,
+    Calendar,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/Contexts/SidebarContext";
@@ -71,6 +72,12 @@ export default function AppSidebar() {
             label: "WhatsApp Session",
             href: "/whatsapp-session",
             icon: MessageCircle,
+            roles: ["SUPER_ADMIN"],
+        },
+        {
+            label: "WhatsApp Schedules",
+            href: "/wa-schedules",
+            icon: Calendar,
             roles: ["SUPER_ADMIN"],
         },
     ];
