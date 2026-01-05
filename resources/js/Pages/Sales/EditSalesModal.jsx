@@ -368,6 +368,26 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         )}
                     </div>
 
+                    {/* Phone */}
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">No. Telepon</Label>
+                        <Input
+                            id="phone"
+                            name="phone"
+                            value={form.phone || ""}
+                            onChange={handleChange}
+                            className={
+                                errors.phone ? "border-red-500" : ""
+                            }
+                            placeholder="Masukkan nomor telepon"
+                        />
+                        {errors.phone && (
+                            <p className="text-sm text-red-500">
+                                {errors.phone}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Location fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div className="space-y-2">

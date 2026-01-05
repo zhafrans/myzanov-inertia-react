@@ -46,6 +46,7 @@ export default function CreateModal() {
     const [form, setForm] = useState({
         card_number: "",
         customer_name: "",
+        phone: "",
         address: "",
         province_id: "",
         city_id: "",
@@ -374,6 +375,7 @@ export default function CreateModal() {
         setForm({
             card_number: "",
             customer_name: "",
+            phone: "",
             address: "",
             province_id: "",
             city_id: "",
@@ -772,6 +774,29 @@ export default function CreateModal() {
                                 {errors.customer_name && (
                                     <p className="text-sm text-red-500">
                                         {errors.customer_name}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">
+                                    No. Telepon
+                                </Label>
+                                <Input
+                                    id="phone"
+                                    name="phone"
+                                    value={form.phone}
+                                    onChange={handleChange}
+                                    className={
+                                        errors.phone
+                                            ? "border-red-500"
+                                            : ""
+                                    }
+                                    placeholder="Masukkan nomor telepon"
+                                />
+                                {errors.phone && (
+                                    <p className="text-sm text-red-500">
+                                        {errors.phone}
                                     </p>
                                 )}
                             </div>

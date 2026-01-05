@@ -241,6 +241,7 @@ class SalesController extends Controller
             'card_number' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'customer_name' => 'required|string',
+            'phone' => 'nullable|string',
             'province_id' => 'required',
             'city_id' => 'required|string',
             'subdistrict_id' => 'required|string',
