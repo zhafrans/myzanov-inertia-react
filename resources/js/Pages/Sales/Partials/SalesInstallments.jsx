@@ -60,7 +60,7 @@ export default function SalesInstallments({
                                     )}
                                 </CardTitle>
                                 <Badge variant="outline" className="text-xs">
-                                    #{String(index + 1).padStart(2, "0")}
+                                    #{String(installment.number || index + 1).padStart(2, "0")}
                                 </Badge>
                             </div>
                         </CardHeader>
