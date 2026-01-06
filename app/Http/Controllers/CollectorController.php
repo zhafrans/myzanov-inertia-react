@@ -9,74 +9,73 @@ use App\Models\Subdistrict;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\DB;
 
 class CollectorController extends Controller
 {
     public function cardStatistics()
     {
-        // Get all sales items with their relationships
-        $salesItems = SalesItem::with(['sale.outstanding', 'sale.seller', 'sale.subdistrict', 'sale.city'])
-            ->whereHas('sale.outstanding')
-            ->get();
-
         // Total statistics - only unpaid cards
-        $totalCards = $salesItems->count();
-        $unpaidCards = $salesItems->filter(function ($item) {
-            return $item->sale->outstanding && $item->sale->outstanding->outstanding_amount > 0;
+        $totalCards = SalesItem::whereHas('sale', function ($query) {
+            $query->whereNull('is_return');
         })->count();
+        
+        $unpaidCards = SalesItem::whereHas('sale', function ($query) {
+            $query->whereNull('is_return')
+                  ->whereHas('outstanding', function ($q) {
+                      $q->where('outstanding_amount', '>', 0);
+                  });
+        })->count();
+        
         $unpaidPercentage = $totalCards > 0 ? round(($unpaidCards / $totalCards) * 100, 2) : 0;
 
         // Statistics per seller - simplified approach
         $sellerStats = [];
-        $sellerGroups = $salesItems->groupBy('sale.seller_id');
-        
-        foreach ($sellerGroups as $sellerId => $items) {
-            $seller = $items->first()->sale->seller;
-            $unpaid = $items->filter(function ($item) {
-                return $item->sale->outstanding && $item->sale->outstanding->outstanding_amount > 0;
-            })->count();
-            
-            $sellerStats[] = [
-                'seller_id' => $sellerId,
-                'seller_name' => $seller ? $seller->name : 'Unknown',
-                'unpaid' => $unpaid,
-                'unpaid_percentage' => $items->count() > 0 ? round(($unpaid / $items->count()) * 100, 2) : 0,
-            ];
-        }
-        
-        // Sort by seller name
-        usort($sellerStats, function ($a, $b) {
-            return strcmp($a['seller_name'], $b['seller_name']);
-        });
+        $sellerQuery = Sales::select(
+            'users.name',
+            DB::raw('COUNT(sales.id) as total'),
+            DB::raw('SUM(CASE WHEN sales_outstandings.outstanding_amount > 0 THEN 1 ELSE 0 END) as unpaid')
+        )
+            ->join('users', 'sales.seller_id', '=', 'users.id')
+            ->join('sales_outstandings', 'sales.id', '=', 'sales_outstandings.sale_id')
+            ->whereNull('sales.is_return')
+            ->groupBy('users.id', 'users.name')
+            ->orderBy('users.name')
+            ->get();
 
-        // Statistics per subdistrict (unpaid cards only)
-        $subdistrictStats = [];
-        $unpaidItems = $salesItems->filter(function ($item) {
-            return $item->sale->outstanding && 
-                   $item->sale->outstanding->outstanding_amount > 0 && 
-                   $item->sale->subdistrict;
-        });
-        
-        $subdistrictGroups = $unpaidItems->groupBy('sale.subdistrict_id');
-        
-        foreach ($subdistrictGroups as $subdistrictId => $items) {
-            $subdistrict = $items->first()->sale->subdistrict;
-            $city = $subdistrict ? $subdistrict->city : null;
-            $count = $items->count();
-            
-            $subdistrictStats[] = [
-                'subdistrict_id' => $subdistrictId,
-                'subdistrict_name' => $subdistrict ? $subdistrict->name : 'Unknown',
-                'city_name' => $city && isset($city->name) ? $city->name : 'Unknown',
-                'unpaid_count' => $count,
+        foreach ($sellerQuery as $seller) {
+            $sellerStats[] = [
+                'seller_id' => $seller->seller_id,
+                'seller_name' => $seller->name,
+                'unpaid' => $seller->unpaid,
+                'unpaid_percentage' => $seller->total > 0 ? round(($seller->unpaid / $seller->total) * 100, 2) : 0,
             ];
         }
-        
-        // Sort by unpaid count descending and take top 10
-        usort($subdistrictStats, function ($a, $b) {
-            return $b['unpaid_count'] - $a['unpaid_count'];
-        });
-        $subdistrictStats = array_slice($subdistrictStats, 0, 10);
+
+        // Statistics per subdistrict (unpaid cards only) - following dashboard pattern
+        $subdistrictQuery = Sales::select(
+            'subdistricts.name as subdistrict_name',
+            'cities.name as city_name',
+            DB::raw('COUNT(sales.id) as unpaid_count')
+        )
+            ->join('subdistricts', 'sales.subdistrict_id', '=', 'subdistricts.id')
+            ->join('cities', 'sales.city_id', '=', 'cities.id')
+            ->join('sales_outstandings', 'sales.id', '=', 'sales_outstandings.sale_id')
+            ->whereNull('sales.is_return')
+            ->where('sales_outstandings.outstanding_amount', '>', 0)
+            ->groupBy('subdistricts.id', 'subdistricts.name', 'cities.id', 'cities.name')
+            ->orderByDesc('unpaid_count')
+            ->limit(10)
+            ->get();
+
+        $subdistrictStats = $subdistrictQuery->map(function ($item) {
+            return [
+                'subdistrict_id' => $item->subdistrict_id ?? 0,
+                'subdistrict_name' => $item->subdistrict_name,
+                'city_name' => $item->city_name,
+                'unpaid_count' => $item->unpaid_count,
+            ];
+        })->toArray();
 
         // Calculate percentages for subdistricts
         $totalUnpaidCards = array_sum(array_column($subdistrictStats, 'unpaid_count'));
@@ -84,33 +83,27 @@ class CollectorController extends Controller
             $stat['percentage'] = $totalUnpaidCards > 0 ? round(($stat['unpaid_count'] / $totalUnpaidCards) * 100, 2) : 0;
         }
 
-        // Statistics per city (unpaid cards only)
-        $cityStats = [];
-        $unpaidCityItems = $salesItems->filter(function ($item) {
-            return $item->sale->outstanding && 
-                   $item->sale->outstanding->outstanding_amount > 0 && 
-                   $item->sale->subdistrict && 
-                   $item->sale->subdistrict->city;
-        });
-        
-        $cityGroups = $unpaidCityItems->groupBy('sale.subdistrict.city_id');
-        
-        foreach ($cityGroups as $cityId => $items) {
-            $city = $items->first()->sale->subdistrict->city;
-            $count = $items->count();
-            
-            $cityStats[] = [
-                'city_id' => $cityId,
-                'city_name' => $city ? $city->name : 'Unknown',
-                'unpaid_count' => $count,
+        // Statistics per city (unpaid cards only) - following dashboard pattern
+        $cityQuery = Sales::select(
+            'cities.name',
+            DB::raw('COUNT(sales.id) as unpaid_count')
+        )
+            ->join('cities', 'sales.city_id', '=', 'cities.id')
+            ->join('sales_outstandings', 'sales.id', '=', 'sales_outstandings.sale_id')
+            ->whereNull('sales.is_return')
+            ->where('sales_outstandings.outstanding_amount', '>', 0)
+            ->groupBy('cities.id', 'cities.name')
+            ->orderByDesc('unpaid_count')
+            ->limit(10)
+            ->get();
+
+        $cityStats = $cityQuery->map(function ($item) {
+            return [
+                'city_id' => $item->city_id ?? 0,
+                'city_name' => $item->name,
+                'unpaid_count' => $item->unpaid_count,
             ];
-        }
-        
-        // Sort by unpaid count descending and take top 10
-        usort($cityStats, function ($a, $b) {
-            return $b['unpaid_count'] - $a['unpaid_count'];
-        });
-        $cityStats = array_slice($cityStats, 0, 10);
+        })->toArray();
 
         // Calculate percentages for cities
         $totalUnpaidCityCards = array_sum(array_column($cityStats, 'unpaid_count'));
