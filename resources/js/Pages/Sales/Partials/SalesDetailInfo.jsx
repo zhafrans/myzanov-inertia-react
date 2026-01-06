@@ -1,15 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Clock, Printer } from "lucide-react"
+import { Clock, Printer, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { usePage } from "@inertiajs/react"
 import ChangeToCashTempoModal from "../ChangeToCashTempoModal"
+import ChangeToCreditModal from "../ChangeToCreditModal"
 
 export default function SalesDetailInfo({ data, saleId, collectors }) {
     const { auth } = usePage().props;
     const [showChangeToCashTempoModal, setShowChangeToCashTempoModal] = useState(false);
+    const [showChangeToCreditModal, setShowChangeToCreditModal] = useState(false);
     
     // Use the actual sales price from data, not calculated from items
     const currentPrice = data.totalPrice || 0;
@@ -27,6 +29,15 @@ export default function SalesDetailInfo({ data, saleId, collectors }) {
     const showChangeToCashTempoButton = canChangeToCashTempo && 
                                         data.paymentType === 'credit' && 
                                         (!data.installments || data.installments.length === 0);
+
+    // Check if user can access change to credit feature
+    const canChangeToCredit = auth.user && ['SUPER_ADMIN', 'ADMIN'].includes(auth.user.role);
+    
+    // Check if change to credit button should be shown (only for cash_tempo payment type and no installments)
+    const showChangeToCreditButton = canChangeToCredit && 
+                                     data.paymentType === 'cash_tempo' && 
+                                     (!data.installments || data.installments.length === 0) &&
+                                     !data.is_return;
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
@@ -116,6 +127,19 @@ export default function SalesDetailInfo({ data, saleId, collectors }) {
                                 className="w-full md:w-auto"
                             >
                                 Change to Cash Tempo
+                            </Button>
+                        </div>
+                    )}
+                    {showChangeToCreditButton && (
+                        <div className="col-span-1 md:col-span-2">
+                            <Button
+                                onClick={() => setShowChangeToCreditModal(true)}
+                                variant="outline"
+                                size="sm"
+                                className="w-full md:w-auto"
+                            >
+                                <CreditCard className="w-3 h-3 mr-1" />
+                                Change to Credit
                             </Button>
                         </div>
                     )}
@@ -267,6 +291,15 @@ export default function SalesDetailInfo({ data, saleId, collectors }) {
             <ChangeToCashTempoModal
                 open={showChangeToCashTempoModal}
                 setOpen={setShowChangeToCashTempoModal}
+                salesId={saleId}
+                currentPrice={currentPrice}
+                collectors={collectors}
+            />
+
+            {/* Change to Credit Modal */}
+            <ChangeToCreditModal
+                open={showChangeToCreditModal}
+                setOpen={setShowChangeToCreditModal}
                 salesId={saleId}
                 currentPrice={currentPrice}
                 collectors={collectors}

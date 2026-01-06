@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "react-toastify";
 
-export default function ChangeToCashTempoModal({
+export default function ChangeToCreditModal({
     open,
     setOpen,
     salesId,
@@ -22,8 +22,9 @@ export default function ChangeToCashTempoModal({
 }) {
     const [form, setForm] = useState({
         new_price: "",
+        installment_months: "5",
+        first_installment_amount: "",
         collector_id: "",
-        payment_date: new Date().toISOString().split("T")[0],
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
@@ -33,12 +34,27 @@ export default function ChangeToCashTempoModal({
         if (open) {
             setForm({
                 new_price: currentPrice.toString(),
+                installment_months: "5",
+                first_installment_amount: currentPrice.toString(),
                 collector_id: collectors?.[0]?.id?.toString() || "",
-                payment_date: new Date().toISOString().split("T")[0],
             });
             setErrors({});
         }
     }, [open, currentPrice, collectors]);
+
+    // Auto-calculate tempo date based on installment months
+    useEffect(() => {
+        if (form.installment_months && form.installment_months > 0) {
+            const today = new Date();
+            const tempoDate = new Date(today);
+            tempoDate.setMonth(tempoDate.getMonth() + parseInt(form.installment_months));
+            
+            setForm(prev => ({
+                ...prev,
+                tempo_at: tempoDate.toISOString().split("T")[0]
+            }));
+        }
+    }, [form.installment_months]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -63,11 +79,20 @@ export default function ChangeToCashTempoModal({
     const validateForm = () => {
         const newErrors = {};
 
-        if (
-            !form.new_price ||
-            parseFloat(form.new_price) <= 0
-        ) {
+        if (!form.new_price || parseFloat(form.new_price) <= 0) {
             newErrors.new_price = "Nominal harus lebih dari 0";
+        }
+
+        if (!form.installment_months || parseInt(form.installment_months) <= 0) {
+            newErrors.installment_months = "Jumlah bulan harus lebih dari 0";
+        }
+
+        if (!form.first_installment_amount || parseFloat(form.first_installment_amount) <= 0) {
+            newErrors.first_installment_amount = "Jumlah installment pertama harus lebih dari 0";
+        }
+
+        if (parseFloat(form.first_installment_amount) > parseFloat(form.new_price)) {
+            newErrors.first_installment_amount = "Jumlah installment pertama tidak boleh melebihi total harga";
         }
 
         if (!form.collector_id) {
@@ -88,10 +113,12 @@ export default function ChangeToCashTempoModal({
         setLoading(true);
 
         router.post(
-            route("sales.change-to-cash-tempo", salesId),
+            route("sales.change-to-credit", salesId),
             {
                 ...form,
                 new_price: parseFloat(form.new_price),
+                installment_months: parseInt(form.installment_months),
+                first_installment_amount: parseFloat(form.first_installment_amount),
             },
             {
                 preserveScroll: true,
@@ -100,7 +127,7 @@ export default function ChangeToCashTempoModal({
                     setLoading(false);
 
                     // Tampilkan toast sukses
-                    toast.success("Berhasil mengubah ke Cash Tempo!");
+                    toast.success("Berhasil mengubah ke Credit!");
 
                     // Reload halaman untuk update data
                     router.reload({ only: ["sale"] });
@@ -111,7 +138,7 @@ export default function ChangeToCashTempoModal({
 
                     // Tampilkan toast error
                     toast.error(
-                        "Gagal mengubah ke Cash Tempo. Silakan coba lagi."
+                        "Gagal mengubah ke Credit. Silakan coba lagi."
                     );
                 },
                 onFinish: () => setLoading(false),
@@ -132,7 +159,7 @@ export default function ChangeToCashTempoModal({
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-semibold">
-                        Change to Cash Tempo
+                        Change to Credit
                     </DialogTitle>
                     <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">
@@ -142,7 +169,7 @@ export default function ChangeToCashTempoModal({
                             </span>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            Ubah tipe pembayaran dari Credit ke Cash Tempo
+                            Ubah tipe pembayaran dari Cash Tempo ke Credit
                         </p>
                     </div>
                 </DialogHeader>
@@ -166,7 +193,6 @@ export default function ChangeToCashTempoModal({
                                     : ""
                             }
                             min="0"
-                            // step="1000"
                         />
                         {errors.new_price && (
                             <p className="text-sm text-red-500">
@@ -181,35 +207,104 @@ export default function ChangeToCashTempoModal({
                         </div>
                     </div>
 
-                    {/* Tanggal Penagihan */}
+                    {/* Jumlah Bulan Angsuran */}
                     <div className="space-y-2">
-                        <Label htmlFor="payment_date">Tanggal Penagihan</Label>
+                        <Label htmlFor="installment_months">
+                            Jumlah Bulan Angsuran
+                        </Label>
+                        <div className="flex gap-2 flex-wrap">
+                            {[1, 2, 3, 4, 5].map((months) => (
+                                <Button
+                                    key={months}
+                                    type="button"
+                                    variant={
+                                        form.installment_months === months.toString()
+                                            ? "default"
+                                            : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={() => {
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            installment_months: months.toString(),
+                                        }));
+                                        if (errors.installment_months)
+                                            setErrors((prev) => ({
+                                                ...prev,
+                                                installment_months: undefined,
+                                            }));
+                                    }}
+                                >
+                                    {months} Bulan
+                                </Button>
+                            ))}
+                        </div>
                         <Input
-                            id="payment_date"
-                            name="payment_date"
-                            type="date"
-                            value={form.payment_date}
+                            id="installment_months"
+                            name="installment_months"
+                            type="number"
+                            min="1"
+                            max="36"
+                            value={form.installment_months}
                             onChange={handleChange}
-                            className={
-                                errors.payment_date
-                                    ? "border-red-500 focus-visible:ring-red-500"
+                            className={`mt-2 ${
+                                errors.installment_months
+                                    ? "border-red-500"
                                     : ""
-                            }
-                            max={new Date().toISOString().split("T")[0]}
+                            }`}
                         />
-                        {errors.payment_date && (
+                        {errors.installment_months && (
                             <p className="text-sm text-red-500">
-                                {errors.payment_date}
+                                {errors.installment_months}
                             </p>
                         )}
                         <p className="text-xs text-muted-foreground">
-                            Tanggal saat installment pertama dicatat
+                            Jatuh Tempo:{" "}
+                            {form.tempo_at &&
+                                new Date(form.tempo_at).toLocaleDateString(
+                                    "id-ID"
+                                )}
                         </p>
+                    </div>
+
+                    {/* Installment Pertama */}
+                    <div className="space-y-2">
+                        <Label htmlFor="first_installment_amount">
+                            Jumlah Tagihan Pertama
+                        </Label>
+                        <Input
+                            id="first_installment_amount"
+                            name="first_installment_amount"
+                            type="number"
+                            value={form.first_installment_amount}
+                            onChange={handleChange}
+                            placeholder="Masukkan jumlah installment pertama"
+                            className={
+                                errors.first_installment_amount
+                                    ? "border-red-500 focus-visible:ring-red-500"
+                                    : ""
+                            }
+                            min="0"
+                            max={form.new_price}
+                        />
+                        {errors.first_installment_amount && (
+                            <p className="text-sm text-red-500">
+                                {errors.first_installment_amount}
+                            </p>
+                        )}
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Sisa: {formatCurrency(parseFloat(form.new_price || 0) - parseFloat(form.first_installment_amount || 0))}</span>
+                            <span>
+                                {parseFloat(form.first_installment_amount || 0) > parseFloat(form.new_price || 0) &&
+                                    "DP tidak boleh melebihi total harga"
+                                }
+                            </span>
+                        </div>
                     </div>
 
                     {/* Collector */}
                     <div className="space-y-2">
-                        <Label htmlFor="collector_id">Penagih</Label>
+                        <Label htmlFor="collector_id">Penagih Pertama</Label>
                         <SearchableSelect
                             value={form.collector_id}
                             onValueChange={handleCollectorChange}
@@ -241,46 +336,11 @@ export default function ChangeToCashTempoModal({
                             variant="outline"
                             onClick={() => setOpen(false)}
                             disabled={loading}
-                            className="sm:flex-1"
                         >
                             Batal
                         </Button>
-                        <Button
-                            type="submit"
-                            disabled={
-                                loading ||
-                                !form.new_price ||
-                                !form.collector_id
-                            }
-                            className="sm:flex-1 bg-blue-600 hover:bg-blue-700"
-                        >
-                            {loading ? (
-                                <>
-                                    <svg
-                                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            className="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            strokeWidth="4"
-                                        ></circle>
-                                        <path
-                                            className="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        ></path>
-                                    </svg>
-                                    Menyimpan...
-                                </>
-                            ) : (
-                                "Ubah ke Cash Tempo"
-                            )}
+                        <Button type="submit" disabled={loading}>
+                            {loading ? "Menyimpan..." : "Ubah ke Credit"}
                         </Button>
                     </DialogFooter>
                 </form>

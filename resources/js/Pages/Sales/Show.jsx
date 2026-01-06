@@ -97,110 +97,105 @@ export default function SalesShow() {
             )}
             
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-center gap-3">
+            <div className="bg-white border rounded-lg p-4 md:p-6 shadow-sm">
+                {/* Baris Pertama - No Kartu */}
+                <div className="flex items-center justify-center gap-3 mb-3">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={handleBack}
-                        className="h-8 w-8 flex-shrink-0"
+                        className="h-8 w-8 flex-shrink-0 absolute left-4"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <div className="min-w-0 flex-1">
-                        <h1 className="text-xl md:text-2xl font-bold truncate flex items-center gap-2">
-                            No Kartu - {sale.card_number || "No Card"}
-                            {sale.is_return && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-400 to-red-600 text-white">
-                                    RETURN
-                                </span>
-                            )}
-                        </h1>
-                        <p className="text-xs md:text-sm text-muted-foreground truncate">
-                            {sale.invoice} | {" "}
-                            {sale.transaction_date}
-                        </p>
-                    </div>
+                    <h1 className="text-xl md:text-2xl font-bold truncate flex items-center gap-2">
+                        No Kartu - {sale.card_number || "No Card"}
+                        {sale.is_return && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-400 to-red-600 text-white">
+                                RETURN
+                            </span>
+                        )}
+                    </h1>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    {canEditSales(user) && !sale.is_return && (
+                {/* Baris Kedua - Invoice & Transaction */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-center gap-1 sm:gap-2 text-xs md:text-sm text-muted-foreground mb-4">
+                    <span>Invoice: <strong>{sale.invoice}</strong></span>
+                    <span className="hidden sm:inline">|</span>
+                    <span>Transaction: <strong>{sale.transaction_date}</strong></span>
+                </div>
+
+                {/* Baris Ketiga & Keempat - Action Buttons */}
+                <div className="flex justify-center">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-2xl">
+                        {canEditSales(user) && !sale.is_return && (
+                            <Button
+                                onClick={handleEdit}
+                                variant="outline"
+                                size="sm"
+                                className="text-yellow-600 hover:text-yellow-700 hover:border-yellow-300 text-xs md:text-sm"
+                            >
+                                <Edit className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                                Edit
+                            </Button>
+                        )}
+
+                        {canEditSales(user) && !sale.is_return && (
+                            <AlertDialog open={openReturn} onOpenChange={setOpenReturn}>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-red-600 hover:text-red-700 hover:border-red-300 text-xs md:text-sm"
+                                    >
+                                        <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                                        Return Barang
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                            Return Barang?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Apakah Anda yakin barang ini di return?
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleReturn}
+                                            className="bg-red-600 hover:bg-red-700"
+                                        >
+                                            Return Barang
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
+
                         <Button
-                            onClick={handleEdit}
+                            onClick={() => setOpenPaymentHistory(true)}
                             variant="outline"
                             size="sm"
-                            className="text-yellow-600 flex-1 md:flex-initial text-xs md:text-sm"
+                            className="text-xs md:text-sm"
                         >
-                            <Edit className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                            Edit
+                            <History className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                            Riwayat Data
                         </Button>
-                    )}
 
-                    {canEditSales(user) && !sale.is_return && (
-                        <AlertDialog open={openReturn} onOpenChange={setOpenReturn}>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-600 flex-1 md:flex-initial text-xs md:text-sm"
-                                >
-                                    <RotateCcw className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                                    Return Barang
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                        Return Barang?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Apakah Anda yakin barang ini di return?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        onClick={handleReturn}
-                                        className="bg-red-600 hover:bg-red-700"
-                                    >
-                                        Return Barang
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
-
-                    <Button
-                        onClick={() => setOpenPaymentHistory(true)}
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 md:flex-initial text-xs md:text-sm"
-                    >
-                        <History className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                        Riwayat Data
-                    </Button>
-
-                    {/* <Button 
-                        onClick={handlePrint} 
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 md:flex-initial text-xs md:text-sm"
-                    >
-                        <Printer className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                        Print
-                    </Button> */}
-
-                    {!sale.is_lunas && canInputInstallment(user) && !sale.is_return && (
-                        <Button
-                            onClick={() => setOpenTagihan(true)}
-                            variant="secondary"
-                            size="sm"
-                            className="flex-1 md:flex-initial text-xs md:text-sm"
-                        >
-                            <FilePlus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                            Input Tagihan
-                        </Button>
-                    )}
+                        {!sale.is_lunas && canInputInstallment(user) && !sale.is_return && (
+                            <Button
+                                onClick={() => setOpenTagihan(true)}
+                                variant="secondary"
+                                size="sm"
+                                className="text-xs md:text-sm"
+                            >
+                                <FilePlus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                                Input Tagihan
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </div>
 

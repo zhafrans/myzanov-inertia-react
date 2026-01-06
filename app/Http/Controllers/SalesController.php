@@ -1928,6 +1928,7 @@ class SalesController extends Controller
         $validated = $request->validate([
             'new_price' => 'required|numeric|min:0',
             'collector_id' => 'required|exists:users,id',
+            'payment_date' => 'required|date|before_or_equal:today',
         ]);
 
         $sale = Sales::findOrFail($id);
@@ -1963,7 +1964,7 @@ class SalesController extends Controller
             SalesInstallment::create([
                 'sale_id' => $sale->id,
                 'installment_amount' => $validated['new_price'],
-                'payment_date' => now(),
+                'payment_date' => $validated['payment_date'],
                 'collector_id' => $validated['collector_id'],
             ]);
 
@@ -1996,6 +1997,105 @@ class SalesController extends Controller
             DB::commit();
 
             return back()->with('success', 'Berhasil mengubah tipe pembayaran ke Cash Tempo');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal mengubah tipe pembayaran: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Change payment type from Cash Tempo to Credit
+     */
+    public function changeToCredit(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'new_price' => 'required|numeric|min:0',
+            'installment_months' => 'required|integer|min:1|max:36',
+            'first_installment_amount' => 'required|numeric|min:0',
+            'collector_id' => 'required|exists:users,id',
+        ]);
+
+        $sale = Sales::findOrFail($id);
+
+        // Check if payment type is cash_tempo
+        if ($sale->payment_type !== 'cash_tempo') {
+            return back()->with('error', 'Hanya dapat mengubah tipe pembayaran dari Cash Tempo ke Credit');
+        }
+
+        // Check if there are existing installments
+        $existingInstallments = SalesInstallment::where('sale_id', $id)->exists();
+        if ($existingInstallments) {
+            return back()->with('error', 'Tidak dapat mengubah ke Credit karena sudah ada installment');
+        }
+
+        // Check if first installment amount is not more than total price
+        if ($validated['first_installment_amount'] > $validated['new_price']) {
+            return back()->with('error', 'Jumlah installment pertama tidak boleh melebihi total harga');
+        }
+
+        // Check user permissions
+        $currentUser = Auth::user();
+        if (!in_array($currentUser->role, ['SUPER_ADMIN', 'ADMIN'])) {
+            return back()->with('error', 'Anda tidak memiliki izin untuk melakukan aksi ini');
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $oldPaymentType = $sale->payment_type;
+            
+            // Calculate tempo date
+            $tempoDate = now()->addMonths($validated['installment_months']);
+            
+            // Update sales record
+            $sale->payment_type = 'credit';
+            $sale->price = $validated['new_price'];
+            $sale->tempo_at = $tempoDate;
+            $sale->save();
+
+            // Create first installment record
+            SalesInstallment::create([
+                'sale_id' => $sale->id,
+                'installment_amount' => $validated['first_installment_amount'],
+                'payment_date' => now(),
+                'collector_id' => $validated['collector_id'],
+                'is_dp' => $validated['first_installment_amount'] < $validated['new_price'],
+            ]);
+
+            // Calculate remaining outstanding
+            $remainingAmount = $validated['new_price'] - $validated['first_installment_amount'];
+            
+            // Create outstanding record if there's remaining amount
+            if ($remainingAmount > 0) {
+                SalesOutstanding::create([
+                    'sale_id' => $sale->id,
+                    'outstanding_amount' => $remainingAmount,
+                ]);
+            }
+
+            // Record payment type change history
+            PaymentTypeChange::create([
+                'sale_id' => $sale->id,
+                'from_payment_type' => $oldPaymentType,
+                'to_payment_type' => 'credit',
+                'reason' => 'Diubah dari Cash Tempo ke Credit dengan nominal baru ' . $validated['new_price'] . ' dan tempo ' . $validated['installment_months'] . ' bulan',
+                'changed_by' => $currentUser->id,
+            ]);
+
+            // Log activity
+            ActivityLog::create([
+                'user_id' => $currentUser->id,
+                'action' => 'CHANGE_TO_CREDIT',
+                'description' => "Mengubah penjualan #{$sale->invoice} dari Cash Tempo ke Credit dengan nominal {$validated['new_price']} dan tempo {$validated['installment_months']} bulan",
+                'model_type' => 'App\Models\Sales',
+                'model_id' => $sale->id,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Berhasil mengubah tipe pembayaran ke Credit');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Gagal mengubah tipe pembayaran: ' . $e->getMessage());
