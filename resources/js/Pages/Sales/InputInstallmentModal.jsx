@@ -41,6 +41,12 @@ export default function InputInstallmentModal({
         }
     }, [open, collectors]);
 
+    // Format collectors untuk SearchableSelect
+    const formattedCollectors = collectors?.map(collector => ({
+        id: collector.id.toString(),
+        name: collector.name,
+    })) || [];
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value }));
@@ -232,11 +238,11 @@ export default function InputInstallmentModal({
                         <SearchableSelect
                             value={form.collector_id}
                             onValueChange={handleCollectorChange}
-                            options={collectors || []}
+                            options={formattedCollectors}
                             placeholder="Pilih penagih..."
                             searchPlaceholder="Cari penagih..."
-                            emptyText="Tidak ada collector tersedia"
-                            disabled={!collectors || collectors.length === 0}
+                            emptyText="Tidak ada penagih tersedia"
+                            disabled={!formattedCollectors || formattedCollectors.length === 0}
                             className={
                                 errors.collector_id ? "border-red-500" : ""
                             }
@@ -246,10 +252,9 @@ export default function InputInstallmentModal({
                                 {errors.collector_id}
                             </p>
                         )}
-                        {collectors && collectors.length === 0 && (
-                            <p className="text-sm text-amber-600">
-                                Tidak ada collector tersedia. Tambahkan
-                                collector terlebih dahulu.
+                        {formattedCollectors && formattedCollectors.length === 0 && (
+                            <p className="text-xs text-amber-600">
+                                Tidak ada penagih dengan role 'sales' atau 'collector' tersedia
                             </p>
                         )}
                     </div>

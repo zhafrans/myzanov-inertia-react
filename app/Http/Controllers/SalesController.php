@@ -189,8 +189,12 @@ class SalesController extends Controller
                 ];
             });
 
-        // Get collectors
-        $collectors = User::select('id', 'name')->orderBy('name')->get();
+        // Get collectors (filter role sales atau collector dan active)
+        $collectors = User::select('id', 'name', 'role')
+            ->whereIn('role', ['sales', 'collector'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         // Get sellers (users who have sales)
         $sellers = User::select('id', 'name')
@@ -446,9 +450,11 @@ class SalesController extends Controller
             ];
         });
 
-        // Ambil data collectors
+        // Ambil data collectors (filter role sales atau collector dan active)
         $collectors = User::query()
-            ->select('id', 'name', 'email')
+            ->select('id', 'name', 'email', 'role')
+            ->whereIn('role', ['sales', 'collector'])
+            ->where('is_active', true)
             ->orderBy('name')
             ->get()
             ->map(function ($user) {
@@ -456,6 +462,7 @@ class SalesController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'role' => $user->role,
                 ];
             });
 
@@ -969,7 +976,11 @@ class SalesController extends Controller
 
     public function getUsers()
     {
-        $users = User::select('id', 'name')->orderBy('name')->get();
+        $users = User::select('id', 'name')
+            ->where('role', 'sales')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
         return response()->json($users);
     }
 
@@ -1180,8 +1191,12 @@ class SalesController extends Controller
                 ];
             });
 
-        // Get collectors list (jika user bukan collector, tampilkan semua user)
-        $collectors = User::select('id', 'name')->orderBy('name')->get();
+        // Get collectors list (filter role sales atau collector dan active)
+        $collectors = User::select('id', 'name', 'role')
+            ->whereIn('role', ['sales', 'collector'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         // Get chart data (hanya jika ada collector yang dipilih, atau untuk current user jika collector)
         $chartCollectorId = $showAllCollectors ? null : ($selectedCollectorId ?? $currentUserId);
@@ -1400,8 +1415,12 @@ class SalesController extends Controller
                 ];
             });
 
-        // Get collectors list
-        $collectors = User::select('id', 'name')->orderBy('name')->get();
+        // Get collectors list (filter role sales atau collector dan active)
+        $collectors = User::select('id', 'name', 'role')
+            ->whereIn('role', ['sales', 'collector'])
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         return Inertia::render('Collector/Uncollected', [
             'sales' => $sales,

@@ -229,7 +229,12 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
     const fetchUsers = async () => {
         try {
             const res = await axios.get(route("api.users"));
-            setUsers(res.data);
+            // Format users untuk SearchableSelect
+            const formattedUsers = res.data.map(user => ({
+                id: user.id.toString(),
+                name: user.name,
+            }));
+            setUsers(formattedUsers);
         } catch (error) {
             console.error(error);
         }
