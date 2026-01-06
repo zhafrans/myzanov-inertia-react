@@ -42,7 +42,8 @@ export default function SalesTableRow({ item, collectors }) {
         setOpenDelete(true);
     };
 
-    const handleDelete = () => {
+    const handleDelete = (e) => {
+        e.stopPropagation();
         router.delete(route("sales.destroy", item.id), {
             preserveScroll: true,
             onSuccess: () => {
@@ -283,7 +284,10 @@ export default function SalesTableRow({ item, collectors }) {
                                 <AlertDialogFooter>
                                     <AlertDialogCancel>Batal</AlertDialogCancel>
                                     <AlertDialogAction
-                                        onClick={handleDelete}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(e);
+                                        }}
                                         className="bg-red-600 hover:bg-red-700"
                                     >
                                         Hapus

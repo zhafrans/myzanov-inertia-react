@@ -15,6 +15,7 @@ import {
     MessageCircle,
     Settings,
     Calendar,
+    BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
@@ -94,6 +95,11 @@ export default function MobileBottomNav() {
             label: "Belum Tertagih",
             href: "/collector/uncollected",
             icon: AlertCircle,
+        },
+        {
+            label: "Statistik kartu",
+            href: "/collector/card-statistics",
+            icon: BarChart3,
         },
     ];
 
@@ -217,11 +223,7 @@ export default function MobileBottomNav() {
     // Check if item is active
     const isActive = (href) => {
         if (href === "/collector") {
-            return (
-                url.startsWith("/collector") && 
-                url !== "/collector/uncollected" &&
-                !url.startsWith("/sales")
-            );
+            return url === "/collector";
         }
         if (href === "#") return false;
         return url === href || url.startsWith(href + "/");
@@ -281,10 +283,8 @@ export default function MobileBottomNav() {
                             // Check if any submenu item is active for highlighting
                             const isSubmenuActive = (() => {
                                 if (item.label === "Collector") {
-                                    // Only active if URL is exactly /collector or starts with /collector/ (but not /collector/uncollected for the main button)
-                                    // Make sure it doesn't match other routes
-                                    const isCollectorRoute = url === "/collector" || (url.startsWith("/collector/") && url !== "/collector/uncollected");
-                                    return isCollectorRoute && !url.startsWith("/sales");
+                                    // Active only if URL is exactly /collector
+                                    return url === "/collector";
                                 }
                                 if (item.label === "Misc") {
                                     return filteredMiscSubmenu.some(

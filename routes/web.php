@@ -9,6 +9,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WaScheduleController;
+use App\Http\Controllers\CollectorController;
 use App\Enums\UserRole;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -118,6 +119,7 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/', [SalesController::class, 'collectorIndex'])->name('index');
             Route::get('/uncollected', [SalesController::class, 'collectorUncollected'])->name('uncollected');
+            Route::get('/card-statistics', [CollectorController::class, 'cardStatistics'])->name('card-statistics');
         });
 
     // Landing Page CMS - Admin and Super Admin

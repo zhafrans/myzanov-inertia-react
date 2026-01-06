@@ -16,6 +16,7 @@ import {
     ChevronRight,
     MessageCircle,
     Calendar,
+    BarChart3,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useSidebar } from "@/Contexts/SidebarContext";
@@ -92,6 +93,11 @@ export default function AppSidebar() {
             label: "Belum Tertagih Bulan Ini",
             href: "/collector/uncollected",
             icon: AlertCircle,
+        },
+        {
+            label: "Statistik kartu",
+            href: "/collector/card-statistics",
+            icon: BarChart3,
         },
     ];
 
