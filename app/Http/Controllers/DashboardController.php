@@ -318,7 +318,7 @@ private function getSalesByStatusData($startDate, $endDate, $allTime = false, $p
         'status',
         DB::raw('COUNT(id) as total')
     )
-        ->where('is_return', '!=', 1);
+        ->whereNull('is_return');
 
     if (!$allTime && $startDate && $endDate) {
         $query->whereBetween('transaction_at', [$startDate, $endDate]);
@@ -326,13 +326,9 @@ private function getSalesByStatusData($startDate, $endDate, $allTime = false, $p
     
     // Apply payment status filter if specified
     if ($paymentStatus === 'paid') {
-        $query->whereHas('outstanding', function ($q) {
-            $q->where('outstanding_amount', '<=', 0);
-        });
+        $query->where('status', 'paid');
     } elseif ($paymentStatus === 'unpaid') {
-        $query->whereHas('outstanding', function ($q) {
-            $q->where('outstanding_amount', '>', 0);
-        });
+        $query->where('status', 'unpaid');
     }
 
     $salesByStatus = $query->groupBy('status')

@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 class OpenRouterService
 {
     protected string $baseUrl = "https://openrouter.ai/api/v1";
-    protected string $apiKey;
+    protected ?string $apiKey;
     protected ?string $siteUrl;
     protected ?string $siteName;
 
