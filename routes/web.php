@@ -82,6 +82,9 @@ Route::middleware('auth')->group(function () {
     // Export route - must be before {id} routes
     Route::get('/sales/export', [SalesController::class, 'export'])->name('sales.export')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
     
+    // Items print list route - must be before {id} routes
+    Route::get('/sales/items/print-list', [SalesController::class, 'itemsPrintList'])->name('sales.items.print-list')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
+    
     // Print item route - must be before {id} routes
     Route::get('/sales/{saleId}/items/{itemId}/print', [SalesController::class, 'printItem'])->name('sales.items.print')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
 

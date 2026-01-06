@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Download, Pencil, FilePlus, Trash2, Clock } from "lucide-react";
+import { Download, Pencil, FilePlus, Trash2, Clock, Printer } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import SalesTableRow from "./SalesTableRow";
 import SalesFilters from "./SalesFilters";
@@ -458,6 +458,15 @@ export default function SalesTable() {
                             Export Data
                         </Button>
                     )}
+                    <Button
+                        variant="outline"
+                        onClick={() => router.visit(route('sales.items.print-list'))}
+                        size="sm"
+                        className="flex-1 md:flex-initial text-blue-600 hover:text-blue-700 text-xs md:text-sm"
+                    >
+                        <Printer className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                        List Print
+                    </Button>
                     <div className="flex-1 md:flex-initial">
                         <CreateModal />
                     </div>

@@ -1681,6 +1681,58 @@ class SalesController extends Controller
     }
 
     /**
+     * Display items print list page
+     */
+    public function itemsPrintList(Request $request)
+    {
+        $query = SalesItem::with(['sale' => function ($query) {
+            $query->select('id', 'invoice', 'card_number', 'customer_name', 'seller_id', 'transaction_at')
+                  ->with('seller:id,name');
+        }]);
+
+        // Search functionality
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                  ->orWhere('color', 'like', "%{$search}%")
+                  ->orWhere('size', 'like', "%{$search}%")
+                  ->orWhereHas('sale', function ($subQ) use ($search) {
+                      $subQ->where('invoice', 'like', "%{$search}%")
+                            ->orWhere('card_number', 'like', "%{$search}%")
+                            ->orWhere('customer_name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Sort: prioritize unprinted items, then order by transaction_at oldest first
+        $sort = $request->input('sort', 'desc');
+        if ($sort === 'desc') {
+            $query->orderByRaw('print_count >= 1 ASC')
+                  ->orderBy('sales.transaction_at', 'desc');
+        } else {
+            $query->orderByRaw('print_count >= 1 ASC')
+                  ->orderBy('sales.transaction_at', 'asc');
+        }
+
+        // Join with sales table to access transaction_at
+        $query->join('sales', 'sales_items.sale_id', '=', 'sales.id');
+
+        // Pagination
+        $perPage = $request->input('perPage', 10);
+        $items = $query->paginate($perPage)->withQueryString();
+
+        return Inertia::render('Sales/ItemsPrintList', [
+            'items' => $items,
+            'filters' => [
+                'search' => $request->search ?? '',
+                'sort' => $request->sort ?? 'desc',
+                'perPage' => $request->perPage ?? 10,
+            ],
+        ]);
+    }
+
+    /**
      * Print sales item card
      */
     public function printItem(string $saleId, string $itemId)
