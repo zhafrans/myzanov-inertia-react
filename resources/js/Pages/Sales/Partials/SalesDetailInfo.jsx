@@ -4,12 +4,29 @@ import { Separator } from "@/components/ui/separator"
 import { Clock, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
+import { usePage } from "@inertiajs/react"
+import ChangeToCashTempoModal from "../ChangeToCashTempoModal"
 
-export default function SalesDetailInfo({ data, saleId }) {
+export default function SalesDetailInfo({ data, saleId, collectors }) {
+    const { auth } = usePage().props;
+    const [showChangeToCashTempoModal, setShowChangeToCashTempoModal] = useState(false);
+    
+    // Use the actual sales price from data, not calculated from items
+    const currentPrice = data.totalPrice || 0;
+    
+    // Calculate total price for display (sum of items)
     const totalPrice = data.items.reduce(
         (sum, item) => sum + (item.price || 0),
         data.totalPrice || 0
     )
+
+    // Check if user can access change to cash tempo feature
+    const canChangeToCashTempo = auth.user && ['SUPER_ADMIN', 'ADMIN'].includes(auth.user.role);
+    
+    // Check if change to cash tempo button should be shown (only for credit payment type and no installments)
+    const showChangeToCashTempoButton = canChangeToCashTempo && 
+                                        data.paymentType === 'credit' && 
+                                        (!data.installments || data.installments.length === 0);
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
@@ -90,6 +107,18 @@ export default function SalesDetailInfo({ data, saleId }) {
                     <Info label="Nama Sales" value={data.salesName} />
                     <Info label="Tipe Pembayaran" value={data.paymentType} />
                     <Info label="Status" value={data.status} />
+                    {showChangeToCashTempoButton && (
+                        <div className="col-span-1 md:col-span-2">
+                            <Button
+                                onClick={() => setShowChangeToCashTempoModal(true)}
+                                variant="outline"
+                                size="sm"
+                                className="w-full md:w-auto"
+                            >
+                                Change to Cash Tempo
+                            </Button>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -233,6 +262,15 @@ export default function SalesDetailInfo({ data, saleId }) {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Change to Cash Tempo Modal */}
+            <ChangeToCashTempoModal
+                open={showChangeToCashTempoModal}
+                setOpen={setShowChangeToCashTempoModal}
+                salesId={saleId}
+                currentPrice={currentPrice}
+                collectors={collectors}
+            />
         </div>
     )
 }

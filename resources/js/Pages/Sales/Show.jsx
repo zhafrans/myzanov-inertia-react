@@ -193,7 +193,7 @@ export default function SalesShow() {
             </div>
 
             {/* CONTENT */}
-            <SalesDetailInfo data={formattedData} saleId={sale.id} />
+            <SalesDetailInfo data={formattedData} saleId={sale.id} collectors={collectors} />
             <SalesInstallments
                 data={formattedData}
                 installments={sale.installments}

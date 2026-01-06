@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update')->middleware('role:' . UserRole::SuperAdmin->value);
     Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy')->middleware('role:' . UserRole::SuperAdmin->value);
     Route::patch('/sales/{id}/return', [SalesController::class, 'return'])->name('sales.return')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    Route::post('/sales/{id}/change-to-cash-tempo', [SalesController::class, 'changeToCashTempo'])->name('sales.change-to-cash-tempo')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
     // Installment routes
     Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);

@@ -1884,4 +1884,75 @@ class SalesController extends Controller
             return back()->with('error', 'Failed to mark item as returned: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Change payment type from Credit to Cash Tempo
+     */
+    public function changeToCashTempo(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'new_price' => 'required|numeric|min:0',
+            'collector_id' => 'required|exists:users,id',
+        ]);
+
+        $sale = Sales::findOrFail($id);
+
+        // Check if payment type is credit
+        if ($sale->payment_type !== 'credit') {
+            return back()->with('error', 'Hanya dapat mengubah tipe pembayaran dari Credit ke Cash Tempo');
+        }
+
+        // Check if there are existing installments
+        $existingInstallments = SalesInstallment::where('sale_id', $id)->exists();
+        if ($existingInstallments) {
+            return back()->with('error', 'Tidak dapat mengubah ke Cash Tempo karena sudah ada installment');
+        }
+
+        // Check user permissions
+        $currentUser = Auth::user();
+        if (!in_array($currentUser->role, ['SUPER_ADMIN', 'ADMIN'])) {
+            return back()->with('error', 'Anda tidak memiliki izin untuk melakukan aksi ini');
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Update sales record
+            $sale->payment_type = 'cash_tempo';
+            $sale->price = $validated['new_price'];
+            $sale->save();
+
+            // Create installment record
+            SalesInstallment::create([
+                'sale_id' => $sale->id,
+                'installment_amount' => $validated['new_price'],
+                'payment_date' => now(),
+                'collector_id' => $validated['collector_id'],
+            ]);
+
+            // Create outstanding record
+            SalesOutstanding::create([
+                'sale_id' => $sale->id,
+                'outstanding_amount' => $validated['new_price'],
+            ]);
+
+            // Log activity
+            ActivityLog::create([
+                'user_id' => $currentUser->id,
+                'action' => 'CHANGE_TO_CASH_TEMPO',
+                'description' => "Mengubah penjualan #{$sale->invoice} dari Credit ke Cash Tempo dengan nominal {$validated['new_price']}",
+                'model_type' => 'App\Models\Sales',
+                'model_id' => $sale->id,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Berhasil mengubah tipe pembayaran ke Cash Tempo');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal mengubah tipe pembayaran: ' . $e->getMessage());
+        }
+    }
 }
