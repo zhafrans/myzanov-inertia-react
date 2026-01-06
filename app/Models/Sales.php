@@ -52,4 +52,9 @@ class Sales extends Model
     {
         return $this->belongsTo(Village::class, 'village_id');
     }
+
+    public function paymentTypeChanges()
+    {
+        return $this->hasMany(PaymentTypeChange::class, 'sale_id');
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\Sales;
 use App\Models\SalesInstallment;
 use App\Models\SalesOutstanding;
 use App\Models\SalesItem;
+use App\Models\PaymentTypeChange;
 use App\Models\User;
 use App\Models\Province;
 use App\Models\City;
@@ -403,6 +404,9 @@ class SalesController extends Controller
             'city',
             'subdistrict',
             'village',
+            'paymentTypeChanges' => function ($query) {
+                $query->with('changedBy')->orderBy('created_at', 'desc');
+            },
         ])
             ->findOrFail($id);
 
@@ -507,6 +511,18 @@ class SalesController extends Controller
                 'is_lunas' => $remainingAmount <= 0,
             ],
             'collectors' => $collectors,
+            'paymentHistory' => $sale->paymentTypeChanges->map(function ($change) {
+                return [
+                    'id' => $change->id,
+                    'from_payment_type' => $change->from_payment_type,
+                    'to_payment_type' => $change->to_payment_type,
+                    'reason' => $change->reason,
+                    'changed_by' => [
+                        'name' => $change->changedBy?->name,
+                    ],
+                    'created_at' => $change->created_at,
+                ];
+            }),
         ]);
     }
 
@@ -1917,6 +1933,8 @@ class SalesController extends Controller
         DB::beginTransaction();
 
         try {
+            $oldPaymentType = $sale->payment_type;
+            
             // Update sales record
             $sale->payment_type = 'cash_tempo';
             $sale->price = $validated['new_price'];
@@ -1934,6 +1952,15 @@ class SalesController extends Controller
             SalesOutstanding::create([
                 'sale_id' => $sale->id,
                 'outstanding_amount' => $validated['new_price'],
+            ]);
+
+            // Record payment type change history
+            PaymentTypeChange::create([
+                'sale_id' => $sale->id,
+                'from_payment_type' => $oldPaymentType,
+                'to_payment_type' => 'cash_tempo',
+                'reason' => 'Diubah dari Credit ke Cash Tempo dengan nominal baru ' . $validated['new_price'],
+                'changed_by' => $currentUser->id,
             ]);
 
             // Log activity
