@@ -179,18 +179,6 @@ export default function ChangeToCashTempoModal({
                         </div>
                     </div>
 
-                    {/* Tanggal Jatuh Tempo (Auto Set Now) */}
-                    <div className="space-y-2">
-                        <Label>Tanggal Jatuh Tempo</Label>
-                        <div className="px-3 py-2 bg-gray-100 rounded-md text-sm text-gray-600">
-                            {new Date().toLocaleDateString("id-ID", {
-                                day: "2-digit",
-                                month: "2-digit", 
-                                year: "numeric",
-                            })} (Auto set)
-                        </div>
-                    </div>
-
                     {/* Collector */}
                     <div className="space-y-2">
                         <Label htmlFor="collector_id">Penagih</Label>
