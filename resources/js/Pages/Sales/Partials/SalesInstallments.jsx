@@ -51,17 +51,29 @@ export default function SalesInstallments({
                     >
                         <CardHeader className="pb-2">
                             <div className="flex justify-between items-start">
-                                <CardTitle className="text-base">
-                                    Angsuran {installment.number || index + 1}
-                                    {installment.is_dp && (
-                                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">
-                                            DP
-                                        </span>
-                                    )}
-                                </CardTitle>
-                                <Badge variant="outline" className="text-xs">
-                                    #{String(installment.number || index + 1).padStart(2, "0")}
-                                </Badge>
+                            <CardTitle className="text-base flex items-center gap-2">
+                                <span>Angsuran ke - </span>
+
+                                {/* Badge nomor angsuran */}
+                                <span
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full
+                                            text-sm font-semibold
+                                            bg-gradient-to-r from-green-700 to-green-600 text-white"
+                                >
+                                    {installment.number || index + 1}
+                                </span>
+
+                                {/* Badge DP */}
+                                {installment.is_dp ? (
+                                    <span
+                                        className="inline-flex items-center px-2 py-0.5 rounded-full
+                                                text-xs font-medium
+                                                bg-gradient-to-r from-yellow-400 to-yellow-600 text-white"
+                                    >
+                                        DP
+                                    </span>
+                                ) : null}
+                            </CardTitle>
                             </div>
                         </CardHeader>
 
