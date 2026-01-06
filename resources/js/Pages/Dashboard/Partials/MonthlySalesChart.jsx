@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function MonthlySalesChart({ data, loading = false }) {
+export default function MonthlySalesChart({ data, loading = false, totalMonthlyQuantity = 0 }) {
     const options = {
         chart: {
             toolbar: { show: false },
@@ -40,7 +40,14 @@ export default function MonthlySalesChart({ data, loading = false }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Penjualan Per Bulan (Per Sales)</CardTitle>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Penjualan Per Bulan (Per Sales)</CardTitle>
+                    {!loading && (
+                        <div className="text-sm font-medium text-muted-foreground">
+                            Total Bulan Ini: <span className="text-foreground font-bold">{totalMonthlyQuantity.toLocaleString('id-ID')}</span> items
+                        </div>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 {loading ? (

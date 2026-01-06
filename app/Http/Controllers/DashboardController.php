@@ -55,6 +55,12 @@ class DashboardController extends Controller
         // 2. Monthly Sales Chart (Penjualan Per Bulan per Sales)
         $monthlySales = $this->getMonthlySalesData($startDate, $endDate);
 
+        // Total quantity sales bulan ini
+        $totalMonthlyQuantity = Sales::whereNull('is_return')
+            ->whereBetween('transaction_at', [$startDate, $endDate])
+            ->join('sales_items', 'sales.id', '=', 'sales_items.sale_id')
+            ->sum('sales_items.quantity');
+
         // 3. Sales by User (Pie Chart)
         $salesByUser = $this->getSalesByUserData($startDate, $endDate);
 
@@ -86,6 +92,7 @@ class DashboardController extends Controller
                 'belumLunas' => $belumLunas,
                 'sudahLunas' => $sudahLunas,
                 'monthlySales' => $monthlySales,
+                'totalMonthlyQuantity' => $totalMonthlyQuantity,
                 'salesByUser' => $salesByUser,
                 'salesByPaymentType' => $salesByPaymentType,
                 'salesByStatus' => $salesByStatus,
@@ -574,9 +581,19 @@ private function getTopProductData($startDate, $endDate, $allTime = false, $limi
         $topCityLimit = (int) $request->input('top_city_limit', 5);
         $topSubdistrictLimit = (int) $request->input('top_subdistrict_limit', 5);
 
+        // Calculate total monthly quantity
+        $totalMonthlyQuantity = 0;
+        if (!$allTime && $startDate && $endDate) {
+            $totalMonthlyQuantity = Sales::whereNull('is_return')
+                ->whereBetween('transaction_at', [$startDate, $endDate])
+                ->join('sales_items', 'sales.id', '=', 'sales_items.sale_id')
+                ->sum('sales_items.quantity');
+        }
+
         $data = [
             'summary' => $this->getGlobalSummaryData($paymentStatus), // Global, tidak terpengaruh filter
             'monthlySales' => $this->getMonthlySalesData($startDate, $endDate, $allTime, $paymentStatus),
+            'totalMonthlyQuantity' => $totalMonthlyQuantity,
             'salesByUser' => $this->getSalesByUserData($startDate, $endDate, $allTime, $paymentStatus),
             'salesByPaymentType' => $this->getSalesByPaymentTypeData($startDate, $endDate, $allTime, $paymentStatus),
             'salesByStatus' => $this->getSalesByStatusData($startDate, $endDate, $allTime, $paymentStatus),

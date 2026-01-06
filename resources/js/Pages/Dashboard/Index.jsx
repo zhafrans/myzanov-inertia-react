@@ -301,6 +301,7 @@ export default function Dashboard() {
                             <MonthlySalesChart
                                 data={stats.monthlySales}
                                 loading={loading}
+                                totalMonthlyQuantity={stats.totalMonthlyQuantity}
                             />
                         </div>
                         <SalesPieChart
