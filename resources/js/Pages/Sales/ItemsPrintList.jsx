@@ -63,14 +63,15 @@ export default function ItemsPrintList() {
     };
 
     const handlePrint = (saleId, itemId) => {
-        router.visit(route('sales.items.print', { saleId, itemId }), {
-            onSuccess: () => {
-                toast.success("Item berhasil dicetak!");
-            },
-            onError: () => {
-                toast.error("Gagal mencetak item. Silakan coba lagi.");
-            },
-        });
+        // Open print route in new tab
+        const printUrl = route('sales.items.print', { saleId, itemId });
+        window.open(printUrl, '_blank');
+        
+        // Show success message
+        toast.success("Item berhasil dicetak!");
+        
+        // Immediately reload the current page
+        window.location.reload();
     };
 
     const toggleSort = () => {
@@ -94,7 +95,7 @@ export default function ItemsPrintList() {
             <div>
                 <h1 className="text-2xl font-bold">List Print Item</h1>
                 <p className="text-muted-foreground">
-                    Daftar semua item (tombol print hanya muncul untuk yang belum dicetak)
+                    Daftar item dengan tipe pembayaran Kredit dan Cash Tempo (tombol print hanya muncul untuk yang belum dicetak)
                 </p>
             </div>
 
@@ -154,6 +155,7 @@ export default function ItemsPrintList() {
                             <TableHead>Qty</TableHead>
                             <TableHead>Harga/Item</TableHead>
                             <TableHead>Tanggal</TableHead>
+                            <TableHead>Tipe</TableHead>
                             <TableHead>Invoice</TableHead>
                             <TableHead>Card No</TableHead>
                             <TableHead>Customer</TableHead>
@@ -186,6 +188,16 @@ export default function ItemsPrintList() {
                                 </TableCell>
                                 <TableCell className="text-sm">
                                     {item.sale?.transaction_at ? new Date(item.sale.transaction_at).toLocaleDateString('id-ID') : '-'}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                    <Badge 
+                                        variant={item.sale?.payment_type === 'credit' ? 'default' : 'secondary'}
+                                        className="text-xs"
+                                    >
+                                        {item.sale?.payment_type === 'credit' ? 'Kredit' : 
+                                         item.sale?.payment_type === 'cash_tempo' ? 'Cash Tempo' : 
+                                         item.sale?.payment_type || '-'}
+                                    </Badge>
                                 </TableCell>
                                 <TableCell className="text-sm font-mono">
                                     {item.sale?.invoice || '-'}

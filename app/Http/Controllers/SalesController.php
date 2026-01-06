@@ -1686,9 +1686,14 @@ class SalesController extends Controller
     public function itemsPrintList(Request $request)
     {
         $query = SalesItem::with(['sale' => function ($query) {
-            $query->select('id', 'invoice', 'card_number', 'customer_name', 'seller_id', 'transaction_at')
+            $query->select('id', 'invoice', 'card_number', 'customer_name', 'seller_id', 'transaction_at', 'payment_type')
                   ->with('seller:id,name');
         }]);
+
+        // Filter by payment type - only show credit and cash_tempo
+        $query->whereHas('sale', function ($subQ) {
+            $subQ->whereIn('payment_type', ['credit', 'cash_tempo']);
+        });
 
         // Search functionality
         if ($request->filled('search')) {
