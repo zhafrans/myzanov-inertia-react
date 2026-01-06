@@ -43,26 +43,42 @@ class RunWaDaily extends Command
                 return 1;
             }
 
+            // Check if already run today
+            if ($schedule->last_daily_run) {
+                $lastRun = Carbon::parse($schedule->last_daily_run);
+                $today = Carbon::today();
+                
+                if ($lastRun->isSameDay($today)) {
+                    $this->info("Report harian sudah dikirim hari ini pada: " . $lastRun->format('Y-m-d H:i:s'));
+                    return 0;
+                }
+            }
+
             $currentTime = Carbon::now()->format('H:i');
             $scheduledTime = Carbon::parse($schedule->daily_at)->format('H:i');
 
-            // Check if current time matches scheduled time (with 5 minute tolerance)
-            $currentMinutes = Carbon::now()->format('H:i');
-            $scheduledMinutes = $schedule->daily_at;
-            
-            $current = Carbon::parse($currentMinutes);
-            $scheduled = Carbon::parse($scheduledMinutes);
+            // Check if current time matches scheduled time (with 2 minute tolerance)
+            $current = Carbon::parse($currentTime);
+            $scheduled = Carbon::parse($scheduledTime);
             
             $diffInMinutes = abs($current->diffInMinutes($scheduled));
             
-            if ($diffInMinutes > 5) {
-                $this->info("Belum waktu pengiriman. Current: {$currentMinutes}, Scheduled: {$scheduledMinutes}");
+            if ($diffInMinutes > 2) {
+                $this->info("Belum waktu pengiriman. Current: {$currentTime}, Scheduled: {$scheduledTime}");
                 return 0;
             }
 
             $this->info("Waktu pengiriman harian tercapai. Memulai proses...");
             
-            return $this->handleDaily();
+            $result = $this->handleDaily();
+            
+            // Update last run timestamp if successful
+            if ($result === 0) {
+                $schedule->update(['last_daily_run' => Carbon::now()]);
+                $this->info("Tracker updated: last_daily_run = " . Carbon::now()->format('Y-m-d H:i:s'));
+            }
+            
+            return $result;
             
         } catch (\Exception $e) {
             Log::error('RunWaDaily handle error', [

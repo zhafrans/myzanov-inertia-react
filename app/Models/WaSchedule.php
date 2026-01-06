@@ -10,11 +10,15 @@ class WaSchedule extends Model
         'daily_at',
         'weekly_day', 
         'weekly_at',
-        'type'
+        'type',
+        'last_daily_run',
+        'last_weekly_run'
     ];
 
     protected $casts = [
         'daily_at' => 'datetime:H:i:s',
         'weekly_at' => 'datetime:H:i:s',
+        'last_daily_run' => 'datetime',
+        'last_weekly_run' => 'datetime',
     ];
 }

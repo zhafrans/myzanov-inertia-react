@@ -43,6 +43,17 @@ class RunWaWeekly extends Command
                 return 1;
             }
 
+            // Check if already run this week
+            if ($schedule->last_weekly_run) {
+                $lastRun = Carbon::parse($schedule->last_weekly_run);
+                $thisWeekStart = Carbon::now()->startOfWeek();
+                
+                if ($lastRun->gte($thisWeekStart)) {
+                    $this->info("Report mingguan sudah dikirim minggu ini pada: " . $lastRun->format('Y-m-d H:i:s'));
+                    return 0;
+                }
+            }
+
             // Carbon format: 0=Sunday, 1=Monday, 2=Tuesday, ..., 6=Saturday
             $currentDay = Carbon::now()->dayOfWeek; // 0 (Sunday) to 6 (Saturday)
             $scheduledDay = $schedule->weekly_day; // 0-6 format from database (Carbon format)
@@ -56,20 +67,28 @@ class RunWaWeekly extends Command
                 return 0;
             }
 
-            // Check if current time matches scheduled time (with 5 minute tolerance)
+            // Check if current time matches scheduled time (with 2 minute tolerance)
             $current = Carbon::parse($currentTime);
             $scheduled = Carbon::parse($scheduledTime);
             
             $diffInMinutes = abs($current->diffInMinutes($scheduled));
             
-            if ($diffInMinutes > 5) {
+            if ($diffInMinutes > 2) {
                 $this->info("Belum waktu pengiriman. Current: {$currentTime}, Scheduled: {$scheduledTime}");
                 return 0;
             }
 
             $this->info("Waktu pengiriman mingguan tercapai. Memulai proses...");
             
-            return $this->handleWeekly();
+            $result = $this->handleWeekly();
+            
+            // Update last run timestamp if successful
+            if ($result === 0) {
+                $schedule->update(['last_weekly_run' => Carbon::now()]);
+                $this->info("Tracker updated: last_weekly_run = " . Carbon::now()->format('Y-m-d H:i:s'));
+            }
+            
+            return $result;
             
         } catch (\Exception $e) {
             Log::error('RunWaWeekly handle error', [
