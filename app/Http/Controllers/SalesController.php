@@ -447,6 +447,7 @@ class SalesController extends Controller
                 'price' => (float) $pricePerItem,
                 'price_per_item' => (float) $pricePerItem,
                 'print_count' => (int) ($item->print_count ?? 0),
+                'last_printed_at' => $item->last_printed_at,
             ];
         });
 
@@ -1881,8 +1882,9 @@ class SalesController extends Controller
             abort(404, 'Item not found');
         }
 
-        // Increment print_count
+        // Increment print_count and update last_printed_at
         $item->increment('print_count');
+        $item->update(['last_printed_at' => now()]);
 
         // Log activity
         ActivityLog::create([

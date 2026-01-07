@@ -191,9 +191,20 @@ export default function SalesDetailInfo({ data, saleId, collectors }) {
                                         Warna: {item.color || '-'} | Size: {item.size || '-'} | Qty: {item.quantity || 1}
                                     </p>
                                     {showPrintCount && (
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            Dicetak: {item.print_count || 0} kali
-                                        </p>
+                                        <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                                            <p>Dicetak: {item.print_count || 0} kali</p>
+                                            {item.last_printed_at && (
+                                                <p>
+                                                    Terakhir cetak: {new Date(item.last_printed_at).toLocaleString('id-ID', {
+                                                        day: '2-digit',
+                                                        month: '2-digit',
+                                                        year: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2">

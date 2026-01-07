@@ -161,6 +161,8 @@ export default function ItemsPrintList() {
                             <TableHead>Customer</TableHead>
                             <TableHead>Sales</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Print Count</TableHead>
+                            <TableHead>Last Printed</TableHead>
                             <TableHead className="text-center">Aksi</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -222,6 +224,18 @@ export default function ItemsPrintList() {
                                     >
                                         {item.print_count < 1 ? "Belum" : "Sudah"}
                                     </Badge>
+                                </TableCell>
+                                <TableCell className="text-sm text-center">
+                                    {item.print_count || 0}
+                                </TableCell>
+                                <TableCell className="text-sm">
+                                    {item.last_printed_at ? new Date(item.last_printed_at).toLocaleString('id-ID', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    }) : '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
                                     {item.print_count < 1 && (
