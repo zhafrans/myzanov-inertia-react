@@ -3,6 +3,7 @@ import { router } from "@inertiajs/react";
 
 export default function CollectorDataRow({ item }) {
     const handleRowClick = () => {
+        console.log('Row clicked, item ID:', item.id);
         router.get(route("sales.show", item.id));
     };
 
@@ -22,7 +23,7 @@ export default function CollectorDataRow({ item }) {
     };
 
     return (
-        <tr className="cursor-pointer hover:bg-gray-50 transition-colors border-b">
+        <tr className="cursor-pointer hover:bg-gray-50 transition-colors border-b" onClick={handleRowClick} style={{ cursor: 'pointer' }}>
             <td className="px-6 py-4">
                 <div className="font-medium text-sm">{item.card_number || '-'}</div>
             </td>
