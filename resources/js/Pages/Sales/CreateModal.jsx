@@ -777,7 +777,7 @@ export default function CreateModal() {
                                     required
                                 />
                                 {errors.customer_name && (
-                                    <p className="text-sm text-red-500">
+                                        <p className="text-sm text-red-500">
                                         {errors.customer_name}
                                     </p>
                                 )}
@@ -970,7 +970,7 @@ export default function CreateModal() {
 
                     {/* Product Items */}
                     <div className="border p-4 rounded-lg space-y-4">
-                        <div className="flex justify-between items-center">
+                        {/* <div className="flex justify-between items-center">
                             <h3 className="font-semibold">Daftar Produk</h3>
                             <Button
                                 type="button"
@@ -981,7 +981,7 @@ export default function CreateModal() {
                                 <Plus className="w-4 h-4 mr-2" />
                                 Tambah Produk
                             </Button>
-                        </div>
+                        </div> */}
 
                         {errors.items && (
                             <p className="text-sm text-red-500">
