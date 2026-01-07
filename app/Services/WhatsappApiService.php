@@ -226,81 +226,125 @@ class WhatsappApiService
     }
 
     /**
-     * Send message to individual
+     * Send message to individual with retry logic
      */
     public function sendMessage(string $phoneNumber, string $message, ?string $sessionId = null): array
     {
-        try {
-            $targetSessionId = $sessionId ?? $this->sessionId;
+        $attempt = 0;
+        $maxDelay = 60; // Maximum delay of 60 seconds
+        
+        while (true) {
+            $attempt++;
             
-            Log::info('WhatsApp sendMessage attempt', [
-                'session_id' => $targetSessionId,
-                'phone_number' => $phoneNumber,
-                'message_length' => strlen($message)
-            ]);
+            try {
+                $targetSessionId = $sessionId ?? $this->sessionId;
+                
+                Log::info('WhatsApp sendMessage attempt', [
+                    'session_id' => $targetSessionId,
+                    'phone_number' => $phoneNumber,
+                    'message_length' => strlen($message),
+                    'attempt' => $attempt
+                ]);
 
-            $response = Http::withHeaders([
-                'x-api-key'    => $this->apiKey,
-                'Content-Type' => 'application/json'
-            ])
-            ->timeout(30)
-            ->post("{$this->baseUrl}/session/{$targetSessionId}/send", [
-                "phoneNumber" => $phoneNumber,
-                "message" => $message
-            ]);
+                $response = Http::withHeaders([
+                    'x-api-key'    => $this->apiKey,
+                    'Content-Type' => 'application/json'
+                ])
+                ->timeout(30)
+                ->post("{$this->baseUrl}/session/{$targetSessionId}/send", [
+                    "phoneNumber" => $phoneNumber,
+                    "message" => $message
+                ]);
 
-            return $this->handleResponse($response, 'sendMessage');
-
-        } catch (\Exception $e) {
-            Log::error('WhatsApp sendMessage error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'General error: ' . $e->getMessage()
-            ];
+                $result = $this->handleResponse($response, 'sendMessage');
+                
+                // Check if the operation was successful
+                if (isset($result['success']) && $result['success'] === true) {
+                    Log::info("WhatsApp sendMessage successful on attempt {$attempt}");
+                    return $result;
+                }
+                
+                // If failed, log and retry
+                Log::warning("WhatsApp sendMessage failed on attempt {$attempt}", [
+                    'result' => $result,
+                    'will_retry' => true
+                ]);
+                
+            } catch (\Exception $e) {
+                Log::error("WhatsApp sendMessage exception on attempt {$attempt}", [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'will_retry' => true
+                ]);
+            }
+            
+            // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, 16s, 32s, 60s, 60s...)
+            $delay = min(pow(2, $attempt - 1), $maxDelay);
+            
+            Log::info("WhatsApp sendMessage retrying in {$delay} seconds (attempt {$attempt})");
+            sleep($delay);
         }
     }
 
     /**
-     * Send message to group
+     * Send message to group with retry logic
      */
     public function sendGroup(string $message, ?string $groupId = null, ?string $sessionId = null): array
     {
-        try {
-            $targetSessionId = $sessionId ?? $this->sessionId;
-            $targetGroupId = $groupId ?? $this->groupId;
+        $attempt = 0;
+        $maxDelay = 60; // Maximum delay of 60 seconds
+        
+        while (true) {
+            $attempt++;
             
-            Log::info('WhatsApp sendGroup attempt', [
-                'session_id' => $targetSessionId,
-                'group_id' => $targetGroupId,
-                'message_length' => strlen($message)
-            ]);
+            try {
+                $targetSessionId = $sessionId ?? $this->sessionId;
+                $targetGroupId = $groupId ?? $this->groupId;
+                
+                Log::info('WhatsApp sendGroup attempt', [
+                    'session_id' => $targetSessionId,
+                    'group_id' => $targetGroupId,
+                    'message_length' => strlen($message),
+                    'attempt' => $attempt
+                ]);
 
-            $response = Http::withHeaders([
-                'x-api-key'    => $this->apiKey,
-                'Content-Type' => 'application/json'
-            ])
-            ->timeout(30)
-            ->post("{$this->baseUrl}/session/{$targetSessionId}/send-group", [
-                "groupId" => $targetGroupId,
-                "message" => $message
-            ]);
+                $response = Http::withHeaders([
+                    'x-api-key'    => $this->apiKey,
+                    'Content-Type' => 'application/json'
+                ])
+                ->timeout(30)
+                ->post("{$this->baseUrl}/session/{$targetSessionId}/send-group", [
+                    "groupId" => $targetGroupId,
+                    "message" => $message
+                ]);
 
-            return $this->handleResponse($response, 'sendGroup');
-
-        } catch (\Exception $e) {
-            Log::error('WhatsApp sendGroup error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return [
-                'success' => false,
-                'error' => 'General error: ' . $e->getMessage()
-            ];
+                $result = $this->handleResponse($response, 'sendGroup');
+                
+                // Check if the operation was successful
+                if (isset($result['success']) && $result['success'] === true) {
+                    Log::info("WhatsApp sendGroup successful on attempt {$attempt}");
+                    return $result;
+                }
+                
+                // If failed, log and retry
+                Log::warning("WhatsApp sendGroup failed on attempt {$attempt}", [
+                    'result' => $result,
+                    'will_retry' => true
+                ]);
+                
+            } catch (\Exception $e) {
+                Log::error("WhatsApp sendGroup exception on attempt {$attempt}", [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'will_retry' => true
+                ]);
+            }
+            
+            // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, 16s, 32s, 60s, 60s...)
+            $delay = min(pow(2, $attempt - 1), $maxDelay);
+            
+            Log::info("WhatsApp sendGroup retrying in {$delay} seconds (attempt {$attempt})");
+            sleep($delay);
         }
     }
 

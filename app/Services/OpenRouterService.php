@@ -21,94 +21,90 @@ class OpenRouterService
 
     public function chat(string $text, string $model = 'nex-agi/deepseek-v3.1-nex-n1:free'): string
     {
-        try {
-            Log::info('OpenRouter chat attempt', [
-                'model' => $model,
-                'text_length' => strlen($text),
-                'text_preview' => substr($text, 0, 200)
-            ]);
+        $attempt = 0;
+        $maxDelay = 60; // Maximum delay of 60 seconds
+        
+        while (true) {
+            $attempt++;
+            
+            try {
+                Log::info('OpenRouter chat attempt', [
+                    'model' => $model,
+                    'text_length' => strlen($text),
+                    'text_preview' => substr($text, 0, 200),
+                    'attempt' => $attempt
+                ]);
 
-            $headers = [
-                "Authorization" => "Bearer {$this->apiKey}",
-                "Content-Type"  => "application/json",
-            ];
+                $headers = [
+                    "Authorization" => "Bearer {$this->apiKey}",
+                    "Content-Type"  => "application/json",
+                ];
 
-            if ($this->siteUrl)  $headers["HTTP-Referer"] = $this->siteUrl;
-            if ($this->siteName) $headers["X-Title"]      = $this->siteName;
+                if ($this->siteUrl)  $headers["HTTP-Referer"] = $this->siteUrl;
+                if ($this->siteName) $headers["X-Title"]      = $this->siteName;
 
-            $response = Http::withHeaders($headers)
-                ->timeout(120)
-                ->connectTimeout(30)
-                ->post("{$this->baseUrl}/chat/completions", [
-                    "model" => $model,
-                    "messages" => [
-                        [
-                            "role" => "system",
-                            "content" => "You are Zanovia AI assistant for ZANOV Shoes."
-                        ],
-                        [
-                            "role" => "user",
-                            "content" => $text
+                $response = Http::withHeaders($headers)
+                    ->timeout(120)
+                    ->connectTimeout(30)
+                    ->post("{$this->baseUrl}/chat/completions", [
+                        "model" => $model,
+                        "messages" => [
+                            [
+                                "role" => "system",
+                                "content" => "You are Zanovia AI assistant for ZANOV Shoes."
+                            ],
+                            [
+                                "role" => "user",
+                                "content" => $text
+                            ]
                         ]
-                    ]
+                    ]);
+
+                if ($response->failed()) {
+                    Log::error('OpenRouter chat failed response', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                        'model' => $model,
+                        'attempt' => $attempt
+                    ]);
+
+                    throw new \Exception("OpenRouter API error (HTTP {$response->status()}): " . $response->body());
+                }
+
+                $json = $response->json();
+
+                if (!isset($json['choices'][0]['message']['content'])) {
+                    Log::error('OpenRouter chat unexpected response format', [
+                        'response' => $json,
+                        'attempt' => $attempt
+                    ]);
+
+                    throw new \Exception("Error: Unexpected response format from OpenRouter");
+                }
+
+                $content = $json['choices'][0]['message']['content'];
+
+                Log::info('OpenRouter chat success', [
+                    'response_length' => strlen($content),
+                    'response_preview' => substr($content, 0, 200),
+                    'attempt' => $attempt
                 ]);
 
-            if ($response->failed()) {
-                Log::error('OpenRouter chat failed response', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                    'model' => $model
+                return $content;
+                
+            } catch (\Exception $e) {
+                Log::error("OpenRouter chat exception on attempt {$attempt}", [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                    'will_retry' => true
                 ]);
-
-                return "OpenRouter API error (HTTP {$response->status()}): " . $response->body();
+                
+                // Calculate delay with exponential backoff (1s, 2s, 4s, 8s, 16s, 32s, 60s, 60s...)
+                $delay = min(pow(2, $attempt - 1), $maxDelay);
+                
+                Log::info("OpenRouter chat retrying in {$delay} seconds (attempt {$attempt})");
+                sleep($delay);
             }
-
-            $json = $response->json();
-
-            if (!isset($json['choices'][0]['message']['content'])) {
-                Log::error('OpenRouter chat unexpected response format', [
-                    'response' => $json
-                ]);
-
-                return "Error: Unexpected response format from OpenRouter";
-            }
-
-            $content = $json['choices'][0]['message']['content'];
-
-            Log::info('OpenRouter chat success', [
-                'response_length' => strlen($content),
-                'response_preview' => substr($content, 0, 200)
-            ]);
-
-            return $content;
-
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('OpenRouter chat connection error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'url' => "{$this->baseUrl}/chat/completions"
-            ]);
-
-            return "Connection error to OpenRouter: " . $e->getMessage();
-
-        } catch (\Illuminate\Http\Client\RequestException $e) {
-            Log::error('OpenRouter chat request error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'response' => $e->response?->body()
-            ]);
-
-            return "Request error to OpenRouter: " . $e->getMessage();
-
-        } catch (\Exception $e) {
-            Log::error('OpenRouter chat general error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'class' => get_class($e),
-                'model' => $model
-            ]);
-
-            return "General error: " . $e->getMessage();
         }
     }
 }
