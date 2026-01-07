@@ -22,8 +22,25 @@ export default function CollectorDataFilter({ onFilterChange, sellers = [], init
         // Set initial filters
         setLocalFilters(initialFilters)
         
-        // Sync dateRange with filters
-        if (initialFilters.startDate && initialFilters.endDate) {
+        // If no date filters are set, default to current month
+        if (!initialFilters.startDate && !initialFilters.endDate && !initialFilters.all_time) {
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            
+            const defaultFilters = {
+                ...initialFilters,
+                startDate: firstDay.getFullYear() + '-' + String(firstDay.getMonth() + 1).padStart(2, '0') + '-' + String(firstDay.getDate()).padStart(2, '0'),
+                endDate: lastDay.getFullYear() + '-' + String(lastDay.getMonth() + 1).padStart(2, '0') + '-' + String(lastDay.getDate()).padStart(2, '0'),
+                all_time: false,
+            };
+            setLocalFilters(defaultFilters);
+            setDateRange({
+                from: firstDay,
+                to: lastDay
+            });
+            setIsAllTime(false);
+        } else if (initialFilters.startDate && initialFilters.endDate) {
             setDateRange({
                 from: new Date(initialFilters.startDate),
                 to: new Date(initialFilters.endDate)

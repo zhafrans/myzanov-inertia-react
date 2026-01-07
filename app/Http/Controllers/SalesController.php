@@ -929,6 +929,91 @@ class SalesController extends Controller
     }
 
     /**
+     * Delete an installment.
+     */
+    public function deleteInstallment(string $saleId, string $installmentId)
+    {
+        $sale = Sales::with(['installments', 'outstanding'])->findOrFail($saleId);
+        $installment = SalesInstallment::findOrFail($installmentId);
+
+        // Pastikan installment milik sale yang benar
+        if ($installment->sale_id != $sale->id) {
+            return back()->withErrors([
+                'installment' => 'Installment tidak ditemukan untuk sale ini.'
+            ]);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Simpan data untuk activity log
+            $deletedInstallmentData = $installment->toArray();
+
+            // Hapus installment
+            $installment->delete();
+
+            // Hitung ulang total pembayaran dan outstanding amount
+            $newTotalPaid = $sale->installments()->sum('installment_amount');
+            $newOutstanding = $sale->price - $newTotalPaid;
+
+            // Update outstanding record
+            if ($sale->outstanding) {
+                $sale->outstanding()->update([
+                    'outstanding_amount' => $newOutstanding
+                ]);
+            } else {
+                // Buat outstanding record jika belum ada
+                $sale->outstanding()->create([
+                    'outstanding_amount' => $newOutstanding
+                ]);
+            }
+
+            // Update status berdasarkan outstanding amount
+            if ($newOutstanding <= 0) {
+                $sale->update(['status' => 'paid']);
+            } else {
+                $sale->update(['status' => 'unpaid']);
+            }
+
+            // Log activity untuk delete installment
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'delete',
+                'module' => 'sales_installments',
+                'description' => "Menghapus installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $installmentId,
+                'model_type' => SalesInstallment::class,
+                'old_values' => $deletedInstallmentData,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('sales.show', $saleId)
+                ->with('success', 'Installment berhasil dihapus.')
+                ->with('remaining_amount', $newOutstanding);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Log error activity
+            ActivityLog::create([
+                'user_id' => Auth::id(),
+                'action' => 'delete',
+                'module' => 'sales_installments',
+                'description' => "Gagal menghapus installment untuk penjualan: {$sale->invoice} - {$sale->customer_name}",
+                'model_id' => $installmentId,
+                'model_type' => SalesInstallment::class,
+                'old_values' => $deletedInstallmentData ?? [],
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+
+            return back()->with('error', 'Gagal menghapus installment: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get installment history for a sale.
      */
     public function getInstallments(string $id)

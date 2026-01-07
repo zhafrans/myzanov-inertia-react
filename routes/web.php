@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/sales/{id}/installments', [SalesController::class, 'createInstallment'])->name('sales.installments.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
     Route::get('/sales/{id}/installments', [SalesController::class, 'getInstallments'])->name('sales.installments.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
     Route::put('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'updateInstallment'])->name('sales.installments.update')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    Route::delete('/sales/{saleId}/installments/{installmentId}', [SalesController::class, 'deleteInstallment'])->name('sales.installments.destroy')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
 
     // Activity Logs - Only Super Admin
     Route::resource('activity-logs', ActivityLogController::class)

@@ -128,6 +128,16 @@ class CollectorController extends Controller
 
     public function data(Request $request)
     {
+        // Default to current month if no date filters are provided
+        if (!$request->filled('startDate') && !$request->filled('endDate') && !$request->filled('all_time')) {
+            $now = Carbon::now();
+            $request->merge([
+                'startDate' => $now->copy()->startOfMonth()->format('Y-m-d'),
+                'endDate' => $now->copy()->endOfMonth()->format('Y-m-d'),
+                'all_time' => false,
+            ]);
+        }
+
         // Create base query for filtering
         $baseQuery = Sales::with(['items', 'installments.collector', 'outstanding', 'seller', 'city', 'subdistrict'])
             ->select([

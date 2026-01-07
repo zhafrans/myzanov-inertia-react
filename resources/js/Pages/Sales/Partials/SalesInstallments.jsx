@@ -1,10 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { usePage } from "@inertiajs/react";
 import EditInstallmentModal from "../EditInstallmentModal";
+import DeleteInstallmentModal from "./DeleteInstallmentModal";
 import { canInputInstallment } from "@/lib/userRoles";
 
 export default function SalesInstallments({
@@ -18,6 +19,8 @@ export default function SalesInstallments({
     const installmentsData = installments || data.installments || [];
     const [editingInstallment, setEditingInstallment] = useState(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [deletingInstallment, setDeletingInstallment] = useState(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     if (installmentsData.length === 0) {
         return (
@@ -74,6 +77,20 @@ export default function SalesInstallments({
                                     </span>
                                 ) : null}
                             </CardTitle>
+                            {saleId && installment.id && canInputInstallment(user) && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => {
+                                        setDeletingInstallment(installment);
+                                        setIsDeleteModalOpen(true);
+                                    }}
+                                    title="Hapus angsuran"
+                                >
+                                    <Trash2 className="h-3 w-3" />
+                                </Button>
+                            )}
                             </div>
                         </CardHeader>
 
@@ -187,6 +204,19 @@ export default function SalesInstallments({
                     remainingAmount={data.remaining}
                     onSuccess={() => {
                         setEditingInstallment(null);
+                    }}
+                />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {saleId && deletingInstallment && (
+                <DeleteInstallmentModal
+                    open={isDeleteModalOpen}
+                    setOpen={setIsDeleteModalOpen}
+                    saleId={saleId}
+                    installment={deletingInstallment}
+                    onSuccess={() => {
+                        setDeletingInstallment(null);
                     }}
                 />
             )}
