@@ -141,69 +141,29 @@ class DashboardController extends Controller
         $dates = [];
         $dateLabels = [];
 
-        // Jika range <= 31 hari, gunakan per hari
-        if ($daysDiff <= 31) {
-            $currentDate = $startDate->copy();
-            while ($currentDate->lte($endDate)) {
-                $dates[] = [
-                    'start' => $currentDate->copy()->startOfDay(),
-                    'end' => $currentDate->copy()->endOfDay()
-                ];
-                // Format: 01 Jan
-                $day = $currentDate->format('d');
-                $monthIndex = (int) $currentDate->format('n') - 1; // 0-11
-                $dateLabels[] = $day . ' ' . $monthNames[$monthIndex];
-                $currentDate->addDay();
+        // Selalu gunakan per bulan sebagai scope terkecil
+        $currentDate = $startDate->copy()->startOfMonth();
+        while ($currentDate->lte($endDate)) {
+            $monthStart = $currentDate->copy()->startOfMonth();
+            $monthEnd = $currentDate->copy()->endOfMonth();
+            
+            // Adjust jika di luar range
+            if ($monthStart->lt($startDate)) {
+                $monthStart = $startDate->copy();
             }
-        }
-        // Jika range > 31 hari tapi <= 93 hari (3 bulan), gunakan per minggu
-        else if ($daysDiff <= 93) {
-            $currentDate = $startDate->copy();
-            while ($currentDate->lte($endDate)) {
-                $weekStart = $currentDate->copy()->startOfWeek();
-                $weekEnd = $currentDate->copy()->endOfWeek();
-                if ($weekEnd->gt($endDate)) {
-                    $weekEnd = $endDate->copy();
-                }
-                
-                $dates[] = [
-                    'start' => $weekStart,
-                    'end' => $weekEnd->copy()->endOfDay()
-                ];
-                // Format: 01 Jan - 07 Jan
-                $startDay = $weekStart->format('d');
-                $startMonthIndex = (int) $weekStart->format('n') - 1;
-                $endDay = $weekEnd->format('d');
-                $endMonthIndex = (int) $weekEnd->format('n') - 1;
-                $dateLabels[] = $startDay . ' ' . $monthNames[$startMonthIndex] . ' - ' . $endDay . ' ' . $monthNames[$endMonthIndex];
-                $currentDate->addWeek();
+            if ($monthEnd->gt($endDate)) {
+                $monthEnd = $endDate->copy();
             }
-        }
-        // Jika range > 93 hari, gunakan per bulan
-        else {
-            $currentDate = $startDate->copy()->startOfMonth();
-            while ($currentDate->lte($endDate)) {
-                $monthStart = $currentDate->copy()->startOfMonth();
-                $monthEnd = $currentDate->copy()->endOfMonth();
-                
-                // Adjust jika di luar range
-                if ($monthStart->lt($startDate)) {
-                    $monthStart = $startDate->copy();
-                }
-                if ($monthEnd->gt($endDate)) {
-                    $monthEnd = $endDate->copy();
-                }
-                
-                $dates[] = [
-                    'start' => $monthStart,
-                    'end' => $monthEnd->copy()->endOfDay()
-                ];
-                // Format: Jan 2025
-                $monthIndex = (int) $currentDate->format('n') - 1; // 0-11
-                $year = $currentDate->format('Y');
-                $dateLabels[] = $monthNames[$monthIndex] . ' ' . $year;
-                $currentDate->addMonth();
-            }
+            
+            $dates[] = [
+                'start' => $monthStart,
+                'end' => $monthEnd->copy()->endOfDay()
+            ];
+            // Format: Jan 2025
+            $monthIndex = (int) $currentDate->format('n') - 1; // 0-11
+            $year = $currentDate->format('Y');
+            $dateLabels[] = $monthNames[$monthIndex] . ' ' . $year;
+            $currentDate->addMonth();
         }
 
         $series = [];

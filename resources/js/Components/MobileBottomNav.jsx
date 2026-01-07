@@ -101,6 +101,11 @@ export default function MobileBottomNav() {
             href: "/collector/card-statistics",
             icon: BarChart3,
         },
+        {
+            label: "Collector Data",
+            href: "/collector/data",
+            icon: Banknote,
+        },
     ];
 
     const miscSubmenu = [
@@ -222,11 +227,8 @@ export default function MobileBottomNav() {
 
     // Check if item is active
     const isActive = (href) => {
-        if (href === "/collector") {
-            return url === "/collector";
-        }
         if (href === "#") return false;
-        return url === href || url.startsWith(href + "/");
+        return url === href;
     };
 
     const handleMenuClick = (e, item) => {
@@ -242,6 +244,13 @@ export default function MobileBottomNav() {
             e.preventDefault();
             setProfileOpen(true);
         }
+    };
+
+    const handleSubmenuClick = (e, href) => {
+        e.preventDefault();
+        setCollectorMenuOpen(false);
+        setMiscMenuOpen(false);
+        router.visit(href);
     };
 
     return (
@@ -283,8 +292,11 @@ export default function MobileBottomNav() {
                             // Check if any submenu item is active for highlighting
                             const isSubmenuActive = (() => {
                                 if (item.label === "Collector") {
-                                    // Active only if URL is exactly /collector
-                                    return url === "/collector";
+                                    return filteredCollectorSubmenu.some(
+                                        (subItem) =>
+                                            url === subItem.href ||
+                                            url.startsWith(subItem.href + "/")
+                                    );
                                 }
                                 if (item.label === "Misc") {
                                     return filteredMiscSubmenu.some(
@@ -361,12 +373,11 @@ export default function MobileBottomNav() {
                             const active = isActive(item.href);
 
                             return (
-                                <Link
+                                <button
                                     key={item.href}
-                                    href={item.href}
-                                    onClick={() => setCollectorMenuOpen(false)}
+                                    onClick={(e) => handleSubmenuClick(e, item.href)}
                                     className={clsx(
-                                        "flex items-center gap-3 p-4 rounded-lg transition-colors",
+                                        "w-full flex items-center gap-3 p-4 rounded-lg transition-colors text-left",
                                         active
                                             ? "bg-primary text-primary-foreground"
                                             : "hover:bg-muted"
@@ -376,7 +387,7 @@ export default function MobileBottomNav() {
                                     <span className="font-medium">
                                         {item.label}
                                     </span>
-                                </Link>
+                                </button>
                             );
                         })}
                     </div>
@@ -398,12 +409,11 @@ export default function MobileBottomNav() {
                             const active = isActive(item.href);
 
                             return (
-                                <Link
+                                <button
                                     key={item.href}
-                                    href={item.href}
-                                    onClick={() => setMiscMenuOpen(false)}
+                                    onClick={(e) => handleSubmenuClick(e, item.href)}
                                     className={clsx(
-                                        "flex items-center gap-3 p-4 rounded-lg transition-colors",
+                                        "w-full flex items-center gap-3 p-4 rounded-lg transition-colors text-left",
                                         active
                                             ? "bg-primary text-primary-foreground"
                                             : "hover:bg-muted"
@@ -413,7 +423,7 @@ export default function MobileBottomNav() {
                                     <span className="font-medium">
                                         {item.label}
                                     </span>
-                                </Link>
+                                </button>
                             );
                         })}
                     </div>

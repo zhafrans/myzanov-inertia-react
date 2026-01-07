@@ -99,6 +99,11 @@ export default function AppSidebar() {
             href: "/collector/card-statistics",
             icon: BarChart3,
         },
+        {
+            label: "Collector Data",
+            href: "/collector/data",
+            icon: Banknote,
+        },
     ];
 
     // Filter menu berdasarkan role user

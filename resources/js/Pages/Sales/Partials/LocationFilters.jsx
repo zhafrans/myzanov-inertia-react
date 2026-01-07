@@ -33,7 +33,7 @@ export default function LocationFilters({ filters, setFilters }) {
             }
         };
         fetchProvinces();
-    }, []);
+    }, [filters.province_id]);
 
     // Fetch Cities when province changes
     useEffect(() => {

@@ -120,6 +120,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [SalesController::class, 'collectorIndex'])->name('index');
             Route::get('/uncollected', [SalesController::class, 'collectorUncollected'])->name('uncollected');
             Route::get('/card-statistics', [CollectorController::class, 'cardStatistics'])->name('card-statistics');
+            Route::get('/data', [CollectorController::class, 'data'])->name('data');
         });
 
     // Landing Page CMS - Admin and Super Admin

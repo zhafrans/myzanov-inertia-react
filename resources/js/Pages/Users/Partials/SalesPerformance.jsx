@@ -1,6 +1,11 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon } from "lucide-react"
+import { format } from "date-fns"
+import { id } from "date-fns/locale"
 import PerformanceSummary from "./PerformanceSummary"
 import TopRankingCard from "./TopRankingCard"
 import { router } from "@inertiajs/react"
@@ -13,14 +18,19 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
         return {
-            start_date: startOfMonth.toISOString().split("T")[0],
-            end_date: endOfMonth.toISOString().split("T")[0],
+            start_date: startOfMonth.getFullYear() + '-' + String(startOfMonth.getMonth() + 1).padStart(2, '0') + '-' + String(startOfMonth.getDate()).padStart(2, '0'),
+            end_date: endOfMonth.getFullYear() + '-' + String(endOfMonth.getMonth() + 1).padStart(2, '0') + '-' + String(endOfMonth.getDate()).padStart(2, '0'),
         }
     }
 
     const defaultRange = getDefaultDateRange()
-    const [startDate, setStartDate] = useState(filters.start_date || defaultRange.start_date)
-    const [endDate, setEndDate] = useState(filters.end_date || defaultRange.end_date)
+    const [dateRange, setDateRange] = useState(filters.start_date && filters.end_date ? {
+        from: new Date(filters.start_date),
+        to: new Date(filters.end_date)
+    } : {
+        from: new Date(defaultRange.start_date),
+        to: new Date(defaultRange.end_date)
+    })
     const [isAllTime, setIsAllTime] = useState(filters.all_time || false)
 
     // State untuk limit setiap top card (default 5)
@@ -55,8 +65,8 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
     const handleFilter = () => {
         setIsAllTime(false)
         const params = {}
-        if (startDate) params.start_date = startDate
-        if (endDate) params.end_date = endDate
+        if (dateRange.from) params.start_date = dateRange.from.getFullYear() + '-' + String(dateRange.from.getMonth() + 1).padStart(2, '0') + '-' + String(dateRange.from.getDate()).padStart(2, '0')
+        if (dateRange.to) params.end_date = dateRange.to.getFullYear() + '-' + String(dateRange.to.getMonth() + 1).padStart(2, '0') + '-' + String(dateRange.to.getDate()).padStart(2, '0')
         
         // Reset limits saat filter berubah
         setLimits({
@@ -74,8 +84,10 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
 
     const handleResetFilter = () => {
         const defaultRange = getDefaultDateRange()
-        setStartDate(defaultRange.start_date)
-        setEndDate(defaultRange.end_date)
+        setDateRange({
+            from: new Date(defaultRange.start_date),
+            to: new Date(defaultRange.end_date)
+        })
         setIsAllTime(false)
         
         // Reset limits
@@ -127,8 +139,8 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
         if (isAllTime) {
             params.all_time = true
         } else {
-            if (startDate) params.start_date = startDate
-            if (endDate) params.end_date = endDate
+            if (dateRange.from) params.start_date = dateRange.from.getFullYear() + '-' + String(dateRange.from.getMonth() + 1).padStart(2, '0') + '-' + String(dateRange.from.getDate()).padStart(2, '0')
+            if (dateRange.to) params.end_date = dateRange.to.getFullYear() + '-' + String(dateRange.to.getMonth() + 1).padStart(2, '0') + '-' + String(dateRange.to.getDate()).padStart(2, '0')
         }
 
         // Map cardType ke parameter limit
@@ -170,31 +182,40 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
                 <CardHeader className="space-y-4">
                     <CardTitle>Performa Sales</CardTitle>
                     <div className="space-y-3">
-                        {/* Date Inputs - Stack di mobile, side by side di desktop */}
+                        {/* Date Range Input - Single picker */}
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <Input 
-                                type="date" 
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                placeholder="Dari tanggal"
-                                disabled={isAllTime}
-                                className="w-full sm:flex-1"
-                            />
-                            <Input 
-                                type="date" 
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                placeholder="Sampai tanggal"
-                                disabled={isAllTime}
-                                className="w-full sm:flex-1"
-                            />
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full justify-start text-left font-normal"
+                                        disabled={isAllTime}
+                                    >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {dateRange.from && dateRange.to ? (
+                                            `${format(dateRange.from, "dd MMM yyyy", { locale: id })} - ${format(dateRange.to, "dd MMM yyyy", { locale: id })}`
+                                        ) : (
+                                            "Pilih rentang tanggal"
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="range"
+                                        selected={dateRange}
+                                        onSelect={setDateRange}
+                                        initialFocus
+                                        disabled={isAllTime}
+                                        numberOfMonths={2}
+                                    />
+                                </PopoverContent>
+                            </Popover>
                         </div>
                         {/* Buttons - Wrap dengan flex */}
                         <div className="flex flex-wrap gap-2">
                             <Button 
                                 onClick={handleFilter} 
                                 size="sm" 
-                                disabled={isAllTime}
                                 className="flex-1 sm:flex-initial"
                             >
                                 Filter
@@ -203,10 +224,9 @@ export default function SalesPerformance({ performance, filters = {}, userId }) 
                                 onClick={handleResetFilter} 
                                 variant="outline" 
                                 size="sm" 
-                                disabled={isAllTime}
                                 className="flex-1 sm:flex-initial"
                             >
-                                Reset
+                                Bulan Ini
                             </Button>
                             <Button
                                 variant={isAllTime ? "default" : "secondary"}
