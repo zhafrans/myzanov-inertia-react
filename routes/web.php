@@ -91,8 +91,8 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/sales', [SalesController::class, 'store'])->name('sales.store')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
     Route::get('/sales/{id}', [SalesController::class, 'show'])->name('sales.show')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
-    Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit')->middleware('role:' . UserRole::SuperAdmin->value);
-    Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update')->middleware('role:' . UserRole::SuperAdmin->value);
+    Route::get('/sales/{id}/edit', [SalesController::class, 'edit'])->name('sales.edit')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+    Route::put('/sales/{id}', [SalesController::class, 'update'])->name('sales.update')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
     Route::delete('/sales/{id}', [SalesController::class, 'destroy'])->name('sales.destroy')->middleware('role:' . UserRole::SuperAdmin->value);
     Route::patch('/sales/{id}/return', [SalesController::class, 'return'])->name('sales.return')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
     Route::post('/sales/{id}/change-to-cash-tempo', [SalesController::class, 'changeToCashTempo'])->name('sales.change-to-cash-tempo')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
