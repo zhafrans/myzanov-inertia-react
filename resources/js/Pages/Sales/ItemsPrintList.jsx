@@ -3,7 +3,7 @@ import { router, usePage } from "@inertiajs/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Search } from "lucide-react";
+import { Printer, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "react-toastify";
 import AppLayout from "@/Layouts/AppLayout";
 import {
@@ -226,7 +226,23 @@ export default function ItemsPrintList() {
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                    {item.sale?.seller?.name || '-'}
+                                    {item.sale?.seller?.name ? (
+                                        <div className="inline-flex items-center">
+                                            {item.sale?.seller?.card_color ? (
+                                                <span
+                                                    className="px-2 py-1 rounded text-xs font-medium"
+                                                    style={{
+                                                        backgroundColor: item.sale.seller.card_color.hex_color,
+                                                        color: '#000',
+                                                    }}
+                                                >
+                                                    {item.sale.seller.name}
+                                                </span>
+                                            ) : (
+                                                <span>{item.sale.seller.name}</span>
+                                            )}
+                                        </div>
+                                    ) : '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
                                     <Badge
@@ -281,32 +297,87 @@ export default function ItemsPrintList() {
 
             {/* Pagination */}
             {items.links && items.links.length > 1 && (
-                <div className="flex justify-center">
-                    <div className="flex gap-2">
-                        {items.links.map((link, index) => (
-                            <button
-                                key={index}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                                onClick={() => {
-                                    if (link.url) {
-                                        const url = new URL(link.url);
-                                        const params = Object.fromEntries(url.searchParams);
-                                        router.get(link.url, params, {
-                                            preserveState: true,
-                                        });
-                                    }
-                                }}
-                                className={`px-3 py-2 text-sm rounded-md ${link.active
-                                    ? "bg-primary text-primary-foreground"
-                                    : link.url
-                                        ? "bg-secondary hover:bg-secondary/80"
-                                        : "bg-muted text-muted-foreground cursor-not-allowed"
-                                    }`}
-                                disabled={!link.url}
-                            />
-                        ))}
+                <>
+                    {/* Mobile: Only show arrow buttons */}
+                    <div className="md:hidden w-full flex items-center justify-between gap-4 py-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                                const previousLink = items.links.find(link =>
+                                    link.label.includes('Previous') ||
+                                    link.label.includes('pagination.previous') ||
+                                    link.label.includes('&laquo;')
+                                );
+                                if (previousLink?.url) {
+                                    router.get(previousLink.url, {}, { preserveState: true });
+                                }
+                            }}
+                            disabled={!items.links.find(link =>
+                                link.label.includes('Previous') ||
+                                link.label.includes('pagination.previous') ||
+                                link.label.includes('&laquo;')
+                            )?.url}
+                            className="flex-1"
+                        >
+                            <ChevronLeft className="w-4 h-4 mr-2" />
+                            Previous
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="default"
+                            onClick={() => {
+                                const nextLink = items.links.find(link =>
+                                    link.label.includes('Next') ||
+                                    link.label.includes('pagination.next') ||
+                                    link.label.includes('&raquo;')
+                                );
+                                if (nextLink?.url) {
+                                    router.get(nextLink.url, {}, { preserveState: true });
+                                }
+                            }}
+                            disabled={!items.links.find(link =>
+                                link.label.includes('Next') ||
+                                link.label.includes('pagination.next') ||
+                                link.label.includes('&raquo;')
+                            )?.url}
+                            className="flex-1"
+                        >
+                            Next
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
                     </div>
-                </div>
+
+                    {/* Desktop: Show full pagination */}
+                    <div className="hidden md:flex justify-center">
+                        <div className="flex gap-2">
+                            {items.links.map((link, index) => (
+                                <button
+                                    key={index}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    onClick={() => {
+                                        if (link.url) {
+                                            const url = new URL(link.url);
+                                            const params = Object.fromEntries(url.searchParams);
+                                            router.get(link.url, params, {
+                                                preserveState: true,
+                                            });
+                                        }
+                                    }}
+                                    className={`px-3 py-2 text-sm rounded-md ${link.active
+                                            ? "bg-primary text-primary-foreground"
+                                            : link.url
+                                                ? "bg-secondary hover:bg-secondary/80"
+                                                : "bg-muted text-muted-foreground cursor-not-allowed"
+                                        }`}
+                                    disabled={!link.url}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );

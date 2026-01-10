@@ -10,6 +10,24 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { router } from "@inertiajs/react"
 
+// Helper function to format card color values
+const formatCardColorValue = (value) => {
+    if (typeof value === 'object' && value !== null) {
+        return (
+            <div className="flex items-center gap-2">
+                {value.hex_color && (
+                    <div 
+                        className="w-4 h-4 rounded-full border border-gray-300"
+                        style={{ backgroundColor: value.hex_color }}
+                    />
+                )}
+                <span>{value.display_name || value.color_name}</span>
+            </div>
+        )
+    }
+    return JSON.stringify(value)
+}
+
 const actionVariant = action => {
     switch (action?.toUpperCase()) {
         case "CREATE":
@@ -137,10 +155,12 @@ export default function ActivityLogsTable({ logs, loading }) {
                                                                     <span className="font-medium min-w-24">{key}:</span>
                                                                     <div className="flex-1">
                                                                         <div className="line-through text-red-500">
-                                                                            {log.old_values[key] ? JSON.stringify(log.old_values[key]) : '(empty)'}
+                                                                            {log.old_values[key] ? (
+                                                                                key.includes('color') ? formatCardColorValue(log.old_values[key]) : JSON.stringify(log.old_values[key])
+                                                                            ) : '(empty)'}
                                                                         </div>
                                                                         <div className="text-green-600">
-                                                                            → {JSON.stringify(log.new_values[key])}
+                                                                            → {key.includes('color') ? formatCardColorValue(log.new_values[key]) : JSON.stringify(log.new_values[key])}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -234,10 +254,12 @@ export default function ActivityLogsTable({ logs, loading }) {
                                                         <span className="font-medium text-foreground">{key}:</span>
                                                         <div className="pl-2 space-y-0.5">
                                                             <div className="line-through text-red-500 text-xs">
-                                                                {log.old_values[key] ? JSON.stringify(log.old_values[key]) : '(empty)'}
+                                                                {log.old_values[key] ? (
+                                                                    key.includes('color') ? formatCardColorValue(log.old_values[key]) : JSON.stringify(log.old_values[key])
+                                                                ) : '(empty)'}
                                                             </div>
                                                             <div className="text-green-600 text-xs">
-                                                                → {JSON.stringify(log.new_values[key])}
+                                                                → {key.includes('color') ? formatCardColorValue(log.new_values[key]) : JSON.stringify(log.new_values[key])}
                                                             </div>
                                                         </div>
                                                     </div>

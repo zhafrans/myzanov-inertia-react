@@ -46,4 +46,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Sales::class, 'seller_id');
     }
+
+    public function cardColor()
+    {
+        return $this->hasOne(CardColor::class, 'sales_id');
+    }
 }

@@ -29,32 +29,26 @@ class ActivityLog extends Model
         return $this->morphTo(null, 'model_type', 'model_id');
     }
 
-    // Accessor untuk memastikan password tidak ditampilkan
-    protected function getNewValuesAttribute($value)
+    // Mutator untuk memastikan password tidak disimpan
+    public function setNewValuesAttribute($value)
     {
-        $data = json_decode($value, true);
-
-        if (is_array($data)) {
-            // Mask password jika ada di new_values
-            if (isset($data['password'])) {
-                $data['password'] = '******';
-            }
+        $data = $value;
+        
+        if (is_array($data) && isset($data['password'])) {
+            $data['password'] = '******';
         }
-
-        return $data;
+        
+        $this->attributes['new_values'] = json_encode($data);
     }
 
-    protected function getOldValuesAttribute($value)
+    public function setOldValuesAttribute($value)
     {
-        $data = json_decode($value, true);
-
-        if (is_array($data)) {
-            // Mask password jika ada di old_values
-            if (isset($data['password'])) {
-                $data['password'] = '******';
-            }
+        $data = $value;
+        
+        if (is_array($data) && isset($data['password'])) {
+            $data['password'] = '******';
         }
-
-        return $data;
+        
+        $this->attributes['old_values'] = json_encode($data);
     }
 }

@@ -13,6 +13,8 @@ use App\Models\Province;
 use App\Models\City;
 use App\Models\Subdistrict;
 use App\Models\Village;
+use App\Models\CardColor;
+use App\Enums\CardColor as CardColorEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -1808,7 +1810,10 @@ class SalesController extends Controller
     {
         $query = SalesItem::with(['sale' => function ($query) {
             $query->select('id', 'invoice', 'card_number', 'customer_name', 'seller_id', 'transaction_at', 'payment_type')
-                  ->with('seller:id,name');
+                  ->with(['seller' => function ($sellerQuery) {
+                      $sellerQuery->select('id', 'name')
+                             ->with('cardColor');
+                  }]);
         }]);
 
         // Filter by payment type - only show credit and cash_tempo
@@ -1848,6 +1853,26 @@ class SalesController extends Controller
         // Pagination
         $perPage = $request->input('perPage', 10);
         $items = $query->paginate($perPage)->withQueryString();
+
+        // Transform items to include hex_color and display_name
+        $items->getCollection()->transform(function ($item) {
+            $itemArray = $item->toArray();
+            
+            // Add hex_color and display_name to card_color if exists
+            if (isset($itemArray['sale']['seller']['card_color'])) {
+                $cardColor = $itemArray['sale']['seller']['card_color'];
+                try {
+                    $colorEnum = constant('App\Enums\CardColor::' . $cardColor['color_name']);
+                    $itemArray['sale']['seller']['card_color']['hex_color'] = $colorEnum->value;
+                    $itemArray['sale']['seller']['card_color']['display_name'] = $colorEnum->getName();
+                } catch (\Throwable $e) {
+                    $itemArray['sale']['seller']['card_color']['hex_color'] = null;
+                    $itemArray['sale']['seller']['card_color']['display_name'] = $cardColor['color_name'];
+                }
+            }
+            
+            return $itemArray;
+        });
 
         // Get sellers list (users with role sales)
         $sellers = \App\Models\User::select('id', 'name')

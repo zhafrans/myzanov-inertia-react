@@ -76,6 +76,19 @@ Route::middleware('auth')->group(function () {
         . UserRole::Driver->value
     );
 
+    // Card Color Management - Admin and Super Admin
+    Route::post('/users/{user}/card-color', [UserController::class, 'updateCardColor'])
+        ->name('users.card-color.update')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    Route::delete('/users/{user}/card-color', [UserController::class, 'removeCardColor'])
+        ->name('users.card-color.remove')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
+    Route::get('/users/colors/available', [UserController::class, 'getAvailableColors'])
+        ->name('users.colors.available')
+        ->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);
+
     // Sales Routes
     Route::get('/sales', [SalesController::class, 'index'])->name('sales.index')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value . ',' . UserRole::Collector->value);
     Route::get('/sales/create', [SalesController::class, 'create'])->name('sales.create')->middleware('role:' . UserRole::SuperAdmin->value . ',' . UserRole::Admin->value);

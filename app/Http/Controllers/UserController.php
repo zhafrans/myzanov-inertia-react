@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\Sales;
 use App\Models\SalesItem;
 use App\Models\SalesOutstanding;
+use App\Models\CardColor;
+use App\Enums\CardColor as CardColorEnum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -49,12 +51,28 @@ class UserController extends Controller
 
         $users = $query->paginate(10)->withQueryString();
 
-        // Add profile_image_url to each user
+        // Add profile_image_url and card_color to each user
         $users->getCollection()->transform(function ($user) {
             $userArray = $user->toArray();
             if ($user->profile_image) {
                 $userArray['profile_image_url'] = Storage::url($user->profile_image);
             }
+            
+            // Add card color for sales users
+            if ($user->role === 'SALES') {
+                $cardColor = CardColor::where('sales_id', $user->id)->first();
+                if ($cardColor) {
+                    $userArray['card_color'] = [
+                        'id' => $cardColor->id,
+                        'color_name' => $cardColor->color_name,
+                        'hex_color' => $cardColor->hex_color,
+                        'display_name' => $cardColor->display_name,
+                    ];
+                } else {
+                    $userArray['card_color'] = null;
+                }
+            }
+            
             return $userArray;
         });
 
@@ -472,6 +490,133 @@ class UserController extends Controller
                 'end_date' => $endDate,
                 'all_time' => $allTime,
             ]
+        ]);
+    }
+
+    public function updateCardColor(Request $request, User $user)
+    {
+        // Validate user is sales
+        if ($user->role !== 'SALES') {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Only sales users can have card colors'], 403);
+            }
+            return back()->with('error', 'Only sales users can have card colors');
+        }
+
+        $validated = $request->validate([
+            'color_name' => ['required', Rule::in(array_column(CardColorEnum::cases(), 'name'))],
+        ]);
+
+        // Get old color for logging
+        $oldCardColor = CardColor::where('sales_id', $user->id)->first();
+        $oldValues = null;
+        if ($oldCardColor) {
+            try {
+                $oldColorEnum = constant('App\Enums\CardColor::' . $oldCardColor->color_name);
+                $oldValues = [
+                    'color_name' => $oldCardColor->color_name,
+                    'hex_color' => $oldColorEnum->value,
+                    'display_name' => $oldColorEnum->getName(),
+                ];
+            } catch (\Throwable $e) {
+                $oldValues = ['color_name' => $oldCardColor->color_name];
+            }
+        }
+
+        // Update or create card color
+        $cardColor = CardColor::updateOrCreate(
+            ['sales_id' => $user->id],
+            ['color_name' => $validated['color_name']]
+        );
+
+        // Get new color for logging
+        $newValues = null;
+        try {
+            $newColorEnum = constant('App\Enums\CardColor::' . $cardColor->color_name);
+            $newValues = [
+                'color_name' => $cardColor->color_name,
+                'hex_color' => $newColorEnum->value,
+                'display_name' => $newColorEnum->getName(),
+            ];
+        } catch (\Throwable $e) {
+            $newValues = ['color_name' => $cardColor->color_name];
+        }
+
+        // Log the activity
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'update',
+            'module' => 'card_colors',
+            'description' => "Mengupdate warna kartu untuk sales: {$user->name}",
+            'model_id' => $user->id,
+            'model_type' => User::class,
+            'old_values' => $oldValues,
+            'new_values' => $newValues,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Card color updated successfully']);
+        }
+
+        return redirect()->route('users.index')
+            ->with('success', 'Card color updated successfully');
+    }
+
+    public function removeCardColor(Request $request, User $user)
+    {
+        // Validate user is sales
+        if ($user->role !== 'SALES') {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => 'Only sales users can have card colors'], 403);
+            }
+            return back()->with('error', 'Only sales users can have card colors');
+        }
+
+        // Get old color for logging before deletion
+        $oldCardColor = CardColor::where('sales_id', $user->id)->first();
+        $oldValues = null;
+        if ($oldCardColor) {
+            try {
+                $oldColorEnum = constant('App\Enums\CardColor::' . $oldCardColor->color_name);
+                $oldValues = [
+                    'color_name' => $oldCardColor->color_name,
+                    'hex_color' => $oldColorEnum->value,
+                    'display_name' => $oldColorEnum->getName(),
+                ];
+            } catch (\Throwable $e) {
+                $oldValues = ['color_name' => $oldCardColor->color_name];
+            }
+        }
+
+        CardColor::where('sales_id', $user->id)->delete();
+
+        // Log the activity
+        ActivityLog::create([
+            'user_id' => auth()->id(),
+            'action' => 'delete',
+            'module' => 'card_colors',
+            'description' => "Menghapus warna kartu untuk sales: {$user->name}",
+            'model_id' => $user->id,
+            'model_type' => User::class,
+            'old_values' => $oldValues,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Card color removed successfully']);
+        }
+
+        return redirect()->route('users.index')
+            ->with('success', 'Card color removed successfully');
+    }
+
+    public function getAvailableColors()
+    {
+        return response()->json([
+            'colors' => CardColor::getAvailableColors()
         ]);
     }
 }

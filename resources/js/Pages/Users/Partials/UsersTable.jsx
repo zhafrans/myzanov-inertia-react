@@ -27,6 +27,7 @@ import ConfirmDeleteModal from "@/Components/ConfirmDeleteModal";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import CardColorManager from "./CardColorManager";
 import {
     Select,
     SelectContent,
@@ -47,6 +48,10 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
         role: filters.role || "",
         is_active: filters.is_active ?? "",
     });
+
+    const handleRefresh = () => {
+        router.reload({ only: ['users'] });
+    };
 
     // Debounce Search
     useEffect(() => {
@@ -327,6 +332,12 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
 
                                     <TableCell>
                                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                            {user.role === 'SALES' && (
+                                                <CardColorManager 
+                                                    user={user} 
+                                                    onColorUpdate={handleRefresh}
+                                                />
+                                            )}
                                             <Button
                                                 size="icon"
                                                 variant="outline"
@@ -440,6 +451,12 @@ export default function UsersTable({ users, filters = {}, sort = {} }) {
                                     {user.is_active ? "Aktif" : "Nonaktif"}
                                 </Badge>
                                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                                    {user.role === 'SALES' && (
+                                        <CardColorManager 
+                                            user={user} 
+                                            onColorUpdate={handleRefresh}
+                                        />
+                                    )}
                                     <Button
                                         size="sm"
                                         variant="outline"
