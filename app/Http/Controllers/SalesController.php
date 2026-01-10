@@ -1816,6 +1816,13 @@ class SalesController extends Controller
             $subQ->whereIn('payment_type', ['credit', 'cash_tempo']);
         });
 
+        // Filter by seller_id (sales name)
+        if ($request->filled('seller_id') && $request->seller_id !== 'all') {
+            $query->whereHas('sale', function ($subQ) use ($request) {
+                $subQ->where('seller_id', $request->seller_id);
+            });
+        }
+
         // Search functionality
         if ($request->filled('search')) {
             $search = $request->search;
@@ -1831,29 +1838,31 @@ class SalesController extends Controller
             });
         }
 
-        // Sort: prioritize unprinted items, then order by transaction_at oldest first
-        $sort = $request->input('sort', 'desc');
-        if ($sort === 'desc') {
-            $query->orderByRaw('print_count >= 1 ASC')
-                  ->orderBy('sales.transaction_at', 'desc');
-        } else {
-            $query->orderByRaw('print_count >= 1 ASC')
-                  ->orderBy('sales.transaction_at', 'asc');
-        }
-
         // Join with sales table to access transaction_at
         $query->join('sales', 'sales_items.sale_id', '=', 'sales.id');
+
+        // Order by transaction_at DESC (always)
+        $query->orderByRaw('print_count >= 1 ASC')
+              ->orderBy('sales.transaction_at', 'desc');
 
         // Pagination
         $perPage = $request->input('perPage', 10);
         $items = $query->paginate($perPage)->withQueryString();
 
+        // Get sellers list (users with role sales)
+        $sellers = \App\Models\User::select('id', 'name')
+            ->where('role', 'sales')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Sales/ItemsPrintList', [
             'items' => $items,
+            'sellers' => $sellers,
             'filters' => [
                 'search' => $request->search ?? '',
-                'sort' => $request->sort ?? 'desc',
                 'perPage' => $request->perPage ?? 10,
+                'seller_id' => $request->seller_id ?? 'all',
             ],
         ]);
     }

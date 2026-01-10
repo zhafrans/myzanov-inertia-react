@@ -3,7 +3,7 @@ import { router, usePage } from "@inertiajs/react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Search, ArrowUpDown } from "lucide-react";
+import { Printer, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import AppLayout from "@/Layouts/AppLayout";
 import {
@@ -14,16 +14,23 @@ import {
     TableBody,
     TableCell,
 } from "@/components/ui/table";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function ItemsPrintList() {
-    const { items, filters: initialFilters } = usePage().props;
-    
+    const { items, filters: initialFilters, sellers } = usePage().props;
+
     const [filters, setFilters] = useState({
         search: initialFilters.search || "",
-        sort: initialFilters.sort || "desc",
         perPage: initialFilters.perPage || 10,
+        seller_id: initialFilters.seller_id || "all",
     });
-    
+
     const [debouncedSearch, setDebouncedSearch] = useState(initialFilters.search || "");
     const [loading, setLoading] = useState(false);
 
@@ -66,18 +73,15 @@ export default function ItemsPrintList() {
         // Open print route in new tab
         const printUrl = route('sales.items.print', { saleId, itemId });
         window.open(printUrl, '_blank');
-        
+
         // Show success message
         toast.success("Item berhasil dicetak!");
-        
+
         // Immediately reload the current page
         window.location.reload();
     };
 
-    const toggleSort = () => {
-        const newSort = filters.sort === 'desc' ? 'asc' : 'desc';
-        handleFilterChange({ sort: newSort });
-    };
+
 
     const formatDate = (dateString) => {
         if (!dateString) return "-";
@@ -112,18 +116,25 @@ export default function ItemsPrintList() {
                         />
                     </div>
                 </div>
-                
+
                 <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        onClick={toggleSort}
-                        size="sm"
-                        className="flex items-center gap-2"
+                    <Select
+                        value={filters.seller_id}
+                        onValueChange={(value) => handleFilterChange({ seller_id: value })}
                     >
-                        <ArrowUpDown className="w-4 h-4" />
-                        {filters.sort === 'desc' ? 'Terbaru' : 'Terlama'}
-                    </Button>
-                    
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Filter by Sales" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Semua Sales</SelectItem>
+                            {sellers && sellers.map((seller) => (
+                                <SelectItem key={seller.id} value={seller.id.toString()}>
+                                    {seller.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+
                     <select
                         value={filters.perPage}
                         onChange={(e) => handleFilterChange({ perPage: parseInt(e.target.value) })}
@@ -192,13 +203,13 @@ export default function ItemsPrintList() {
                                     {item.sale?.transaction_at ? new Date(item.sale.transaction_at).toLocaleDateString('id-ID') : '-'}
                                 </TableCell>
                                 <TableCell className="text-sm">
-                                    <Badge 
+                                    <Badge
                                         variant={item.sale?.payment_type === 'credit' ? 'default' : 'secondary'}
                                         className="text-xs"
                                     >
-                                        {item.sale?.payment_type === 'credit' ? 'Kredit' : 
-                                         item.sale?.payment_type === 'cash_tempo' ? 'Cash Tempo' : 
-                                         item.sale?.payment_type || '-'}
+                                        {item.sale?.payment_type === 'credit' ? 'Kredit' :
+                                            item.sale?.payment_type === 'cash_tempo' ? 'Cash Tempo' :
+                                                item.sale?.payment_type || '-'}
                                     </Badge>
                                 </TableCell>
                                 <TableCell className="text-sm font-mono">
@@ -218,7 +229,7 @@ export default function ItemsPrintList() {
                                     {item.sale?.seller?.name || '-'}
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Badge 
+                                    <Badge
                                         variant={item.print_count < 1 ? "destructive" : "secondary"}
                                         className="text-xs"
                                     >
@@ -261,8 +272,8 @@ export default function ItemsPrintList() {
                     <Printer className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Tidak ada item</h3>
                     <p className="text-gray-500">
-                        {filters.search 
-                            ? "Tidak ada item yang cocok dengan pencarian Anda." 
+                        {filters.search
+                            ? "Tidak ada item yang cocok dengan pencarian Anda."
                             : "Belum ada item yang tersedia."}
                     </p>
                 </div>
@@ -285,13 +296,12 @@ export default function ItemsPrintList() {
                                         });
                                     }
                                 }}
-                                className={`px-3 py-2 text-sm rounded-md ${
-                                    link.active
-                                        ? "bg-primary text-primary-foreground"
-                                        : link.url
+                                className={`px-3 py-2 text-sm rounded-md ${link.active
+                                    ? "bg-primary text-primary-foreground"
+                                    : link.url
                                         ? "bg-secondary hover:bg-secondary/80"
                                         : "bg-muted text-muted-foreground cursor-not-allowed"
-                                }`}
+                                    }`}
                                 disabled={!link.url}
                             />
                         ))}

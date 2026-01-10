@@ -473,6 +473,25 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         )}
                     </div>
 
+                    {/* Note */}
+                    <div className="space-y-2">
+                        <Label htmlFor="note">Catatan</Label>
+                        <Textarea
+                            id="note"
+                            name="note"
+                            value={form.note || ""}
+                            onChange={handleChange}
+                            rows={2}
+                            placeholder="Tambahkan catatan (opsional)"
+                            className={errors.note ? "border-red-500" : ""}
+                        />
+                        {errors.note && (
+                            <p className="text-sm text-red-500">
+                                {errors.note}
+                            </p>
+                        )}
+                    </div>
+
                     {/* Nama Sales */}
                     <div className="space-y-2">
                         <Label htmlFor="seller_id">Nama Sales</Label>
@@ -742,19 +761,7 @@ export default function EditSalesModal({ open, setOpen, saleId, saleData }) {
                         </div>
                     )} */}
 
-                    {/* Note */}
-                    <div className="space-y-2">
-                        <Label htmlFor="note">Catatan</Label>
-                        <Textarea
-                            id="note"
-                            name="note"
-                            value={form.note || ""}
-                            onChange={handleChange}
-                            rows={3}
-                            placeholder="Tambahkan catatan jika perlu"
-                        />
-                    </div>
-
+                    
                     <DialogFooter>
                         <Button
                             type="button"

@@ -937,6 +937,26 @@ export default function CreateModal() {
                             </div>
 
                             <div className="space-y-2">
+                                <Label htmlFor="note">Catatan</Label>
+                                <Textarea
+                                    id="note"
+                                    name="note"
+                                    value={form.note}
+                                    onChange={handleChange}
+                                    rows={2}
+                                    placeholder="Tambahkan catatan (opsional)"
+                                    className={
+                                        errors.note ? "border-red-500" : ""
+                                    }
+                                />
+                                {errors.note && (
+                                    <p className="text-sm text-red-500">
+                                        {errors.note}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
                                 <Label htmlFor="seller_id">Nama Sales</Label>
                                 <SearchableSelect
                                     value={form.seller_id?.toString() || ""}
