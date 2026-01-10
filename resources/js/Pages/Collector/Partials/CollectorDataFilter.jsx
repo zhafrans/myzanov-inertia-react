@@ -22,24 +22,17 @@ export default function CollectorDataFilter({ onFilterChange, sellers = [], init
         // Set initial filters
         setLocalFilters(initialFilters)
         
-        // If no date filters are set, default to current month
+        // If no date filters are set, default to all time
         if (!initialFilters.startDate && !initialFilters.endDate && !initialFilters.all_time) {
-            const now = new Date();
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-            
             const defaultFilters = {
                 ...initialFilters,
-                startDate: firstDay.getFullYear() + '-' + String(firstDay.getMonth() + 1).padStart(2, '0') + '-' + String(firstDay.getDate()).padStart(2, '0'),
-                endDate: lastDay.getFullYear() + '-' + String(lastDay.getMonth() + 1).padStart(2, '0') + '-' + String(lastDay.getDate()).padStart(2, '0'),
-                all_time: false,
+                startDate: "",
+                endDate: "",
+                all_time: true,
             };
             setLocalFilters(defaultFilters);
-            setDateRange({
-                from: firstDay,
-                to: lastDay
-            });
-            setIsAllTime(false);
+            setDateRange({ from: null, to: null });
+            setIsAllTime(true);
         } else if (initialFilters.startDate && initialFilters.endDate) {
             setDateRange({
                 from: new Date(initialFilters.startDate),
@@ -103,18 +96,18 @@ export default function CollectorDataFilter({ onFilterChange, sellers = [], init
             search: '',
             payment_type: 'all',
             seller_id: 'all',
-            status: 'all',
+            status: 'unpaid',
             province_id: '',
             city_id: '',
             subdistrict_id: '',
             village_id: '',
             startDate: '',
             endDate: '',
-            all_time: false
+            all_time: true
         }
         setLocalFilters(resetFilters)
         setDateRange({ from: null, to: null })
-        setIsAllTime(false)
+        setIsAllTime(true)
         onFilterChange(resetFilters)
     }
 

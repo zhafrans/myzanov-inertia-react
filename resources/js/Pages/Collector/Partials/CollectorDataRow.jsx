@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
 import { router } from "@inertiajs/react";
 
+// Currency formatting helper
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID').format(amount);
+};
+
 export default function CollectorDataRow({ item }) {
     const handleRowClick = () => {
         console.log('Row clicked, item ID:', item.id);
@@ -49,7 +54,7 @@ export default function CollectorDataRow({ item }) {
             </td>
             <td className="px-6 py-4">
                 <div className="text-sm font-medium">
-                    Rp {item.price.toLocaleString('id-ID')}
+                    Rp {formatCurrency(item.price)}
                 </div>
             </td>
             <td className="px-6 py-4">
@@ -57,7 +62,7 @@ export default function CollectorDataRow({ item }) {
                     {getStatusBadge(item.remaining_amount)}
                     {item.remaining_amount > 0 && (
                         <div className="text-xs text-red-600">
-                            Sisa: Rp {item.remaining_amount.toLocaleString('id-ID')}
+                            Sisa: Rp {formatCurrency(item.remaining_amount)}
                         </div>
                     )}
                 </div>

@@ -22,14 +22,14 @@ export default function CollectorData({ sales, sellers, filters, statistics }) {
             search: '',
             payment_type: 'all',
             seller_id: 'all',
-            status: 'all',
+            status: 'unpaid',
             province_id: '',
             city_id: '',
             subdistrict_id: '',
             village_id: '',
             startDate: '',
             endDate: '',
-            all_time: false
+            all_time: true
         }
         setCurrentFilters(resetFilters)
         router.get(url, resetFilters, {

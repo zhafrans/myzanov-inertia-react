@@ -6,7 +6,7 @@ import {
     TableBody,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import CollectorDataRow from "./CollectorDataRow";
 import CollectorDataPagination from "./CollectorDataPagination";
 import { router, usePage } from "@inertiajs/react";
@@ -21,6 +21,11 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+// Currency formatting helper
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID').format(amount);
+};
 
 // Mobile Card Component
 function CollectorDataMobileCard({ item }) {
@@ -39,7 +44,7 @@ function CollectorDataMobileCard({ item }) {
                     <div className="text-xs text-gray-500">{item.invoice}</div>
                 </div>
                 <div className="text-right">
-                    <div className="font-medium text-sm">Rp {item.price.toLocaleString('id-ID')}</div>
+                    <div className="font-medium text-sm">Rp {formatCurrency(item.price)}</div>
                     <div className={`text-xs px-2 py-1 rounded-full inline-block ${
                         item.remaining_amount > 0 
                             ? 'bg-red-100 text-red-800' 
@@ -72,7 +77,7 @@ function CollectorDataMobileCard({ item }) {
                     <div className="flex justify-between items-center text-sm">
                         <span className="text-gray-600">Sisa:</span>
                         <span className="font-medium text-red-600">
-                            Rp {item.remaining_amount.toLocaleString('id-ID')}
+                            Rp {formatCurrency(item.remaining_amount)}
                         </span>
                     </div>
                 </div>
@@ -105,40 +110,14 @@ export default function CollectorDataTable({ sales }) {
             }
             
             const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
-            router.get(newUrl, {}, { preserveState: true, replace: true });
-        }, 300);
+            router.get(newUrl, {}, { preserveState: true, preserveScroll: true, replace: true });
+        }, 700);
 
         return () => clearTimeout(timer);
     }, [search]);
 
-    // Memoized filtered data
-    const filteredData = useMemo(() => {
-        if (!sales?.data) return [];
-        
-        if (!search) return sales.data;
-        
-        const searchLower = search.toLowerCase();
-        return sales.data.filter((item) => {
-            return (
-                item.invoice?.toLowerCase().includes(searchLower) ||
-                item.card_number?.toLowerCase().includes(searchLower) ||
-                item.customer_name?.toLowerCase().includes(searchLower) ||
-                item.phone?.toLowerCase().includes(searchLower) ||
-                item.address?.toLowerCase().includes(searchLower) ||
-                item.payment_type?.toLowerCase().includes(searchLower) ||
-                item.status?.toLowerCase().includes(searchLower) ||
-                item.note?.toLowerCase().includes(searchLower) ||
-                item.seller?.name?.toLowerCase().includes(searchLower) ||
-                item.items?.some((i) => 
-                    i.product_name?.toLowerCase().includes(searchLower) ||
-                    i.color?.toLowerCase().includes(searchLower) ||
-                    i.size?.toLowerCase().includes(searchLower)
-                ) ||
-                item.city?.name?.toLowerCase().includes(searchLower) ||
-                item.subdistrict?.name?.toLowerCase().includes(searchLower)
-            );
-        });
-    }, [sales?.data, search]);
+    // Use server-filtered data directly (no client-side filtering needed)
+    const filteredData = sales?.data || [];
 
     return (
         <div className="space-y-4">
